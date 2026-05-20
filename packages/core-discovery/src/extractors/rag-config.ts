@@ -1,6 +1,6 @@
 import type { DiscoveryArtifact } from '@audithex/core-types';
 import type { Extractor, ExtractorInput } from './types.js';
-import { isCommentLineAt, offsetToLineColumn } from './utils.js';
+import { type NonCommentMatch, iterateNonCommentMatches } from './utils.js';
 
 /**
  * Detects RAG infrastructure in use: vector store SDKs and embedding
@@ -16,64 +16,41 @@ export const ragConfigExtractor: Extractor = {
   id: 'rag-config',
   extract(input: ExtractorInput): DiscoveryArtifact[] {
     const out: DiscoveryArtifact[] = [];
-
-    VECTOR_STORE_REGEX.lastIndex = 0;
-    for (const match of input.content.matchAll(VECTOR_STORE_REGEX)) {
-      const index = match.index ?? 0;
-      if (
-        input.language.capabilities.scansAsCode &&
-        isCommentLineAt(input.content, index, input.language.lineCommentPrefixes)
-      ) {
-        continue;
-      }
-      const matchText = match[0];
-      const system = matchText.toLowerCase() === 'lance' ? 'lance' : matchText.toLowerCase();
-      const { line, column } = offsetToLineColumn(input.content, index);
+    const prefixes = input.language.lineCommentPrefixes;
+    const treatAsCode = input.language.capabilities.scansAsCode;
+    const push = (hit: NonCommentMatch, detail: Record<string, string>): void => {
       out.push({
         kind: 'rag-config',
         confidence: 'regex',
         location: {
           file: input.relPath,
-          line,
-          column,
-          endLine: line,
-          endColumn: column + matchText.length,
+          line: hit.line,
+          column: hit.column,
+          endLine: hit.line,
+          endColumn: hit.column + hit.text.length,
         },
-        detail: {
-          system,
-          language: input.language.id,
-        },
+        detail: { ...detail, language: input.language.id },
       });
+    };
+
+    for (const hit of iterateNonCommentMatches(
+      input.content,
+      VECTOR_STORE_REGEX,
+      prefixes,
+      treatAsCode,
+    )) {
+      push(hit, { system: hit.text.toLowerCase() });
     }
 
-    EMBEDDING_REGEX.lastIndex = 0;
-    for (const match of input.content.matchAll(EMBEDDING_REGEX)) {
-      const index = match.index ?? 0;
-      if (
-        input.language.capabilities.scansAsCode &&
-        isCommentLineAt(input.content, index, input.language.lineCommentPrefixes)
-      ) {
-        continue;
-      }
-      const matchText = match[0];
-      const { line, column } = offsetToLineColumn(input.content, index);
-      out.push({
-        kind: 'rag-config',
-        confidence: 'regex',
-        location: {
-          file: input.relPath,
-          line,
-          column,
-          endLine: line,
-          endColumn: column + matchText.length,
-        },
-        detail: {
-          system: 'unknown',
-          embeddingModel: matchText,
-          language: input.language.id,
-        },
-      });
+    for (const hit of iterateNonCommentMatches(
+      input.content,
+      EMBEDDING_REGEX,
+      prefixes,
+      treatAsCode,
+    )) {
+      push(hit, { system: 'unknown', embeddingModel: hit.text });
     }
+
     return out;
   },
 };

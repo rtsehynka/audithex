@@ -1,7 +1,7 @@
 import { SECRET_PATTERNS } from '@audithex/core-languages';
 import type { DiscoveryArtifact } from '@audithex/core-types';
 import type { Extractor, ExtractorInput } from './types.js';
-import { isCommentLineAt, offsetToLineColumn, redact } from './utils.js';
+import { iterateNonCommentMatches, redact } from './utils.js';
 
 /**
  * Flags string literals that look like published API keys for any
@@ -16,30 +16,25 @@ export const secretCandidatesExtractor: Extractor = {
   extract(input: ExtractorInput): DiscoveryArtifact[] {
     const out: DiscoveryArtifact[] = [];
     for (const pattern of SECRET_PATTERNS) {
-      pattern.regex.lastIndex = 0;
-      for (const match of input.content.matchAll(pattern.regex)) {
-        const index = match.index ?? 0;
-        if (
-          input.language.capabilities.scansAsCode &&
-          isCommentLineAt(input.content, index, input.language.lineCommentPrefixes)
-        ) {
-          continue;
-        }
-        const matchText = match[0];
-        const { line, column } = offsetToLineColumn(input.content, index);
+      for (const hit of iterateNonCommentMatches(
+        input.content,
+        pattern.regex,
+        input.language.lineCommentPrefixes,
+        input.language.capabilities.scansAsCode,
+      )) {
         out.push({
           kind: 'secret-candidate',
           confidence: 'regex',
           location: {
             file: input.relPath,
-            line,
-            column,
-            endLine: line,
-            endColumn: column + matchText.length,
+            line: hit.line,
+            column: hit.column,
+            endLine: hit.line,
+            endColumn: hit.column + hit.text.length,
           },
           detail: {
             provider: pattern.provider,
-            redactedPreview: redact(matchText),
+            redactedPreview: redact(hit.text),
             language: input.language.id,
           },
         });

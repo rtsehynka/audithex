@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Finding, RuleDocument, SecretPatternEntry } from '@audithex/core-types';
 import type { EngineContext, RuleEngine } from './types.js';
+import { patternMatchesTagWhitelist, safeCompileRegex } from './utils.js';
 
 interface RegexInPromptParams {
   patternBundleId?: string;
@@ -71,27 +72,12 @@ function compileBundle(
 ): CompiledBundlePattern[] {
   const out: CompiledBundlePattern[] = [];
   for (const entry of entries) {
-    if (!matchesTags(entry, whitelist)) continue;
-    try {
-      out.push({
-        id: entry.id,
-        provider: entry.provider,
-        regex: new RegExp(entry.regex, 'g'),
-      });
-    } catch {
-      // skip malformed pattern
-    }
+    if (!patternMatchesTagWhitelist(entry, whitelist)) continue;
+    const regex = safeCompileRegex(entry.regex);
+    if (!regex) continue;
+    out.push({ id: entry.id, provider: entry.provider, regex });
   }
   return out;
-}
-
-function matchesTags(entry: SecretPatternEntry, whitelist?: string[]): boolean {
-  if (!whitelist || whitelist.length === 0) return true;
-  if (!entry.tags || entry.tags.length === 0) return false;
-  for (const tag of entry.tags) {
-    if (whitelist.includes(tag)) return true;
-  }
-  return false;
 }
 
 function loadPromptText(rootPath: string, relFile: string): string | null {

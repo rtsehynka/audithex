@@ -10,7 +10,7 @@ The current build ships these commands:
 
 - `audithex scan [path]` walks the given directory, classifies discovered files, applies the bundled static rules, and prints a report. Exit code is 0 (clean), 1 (low/medium findings only), or 2 (high or critical findings).
 - `audithex selftest` runs the rule engine end-to-end against the current working directory as a pipeline smoke test. Returns non-zero on failure.
-- `audithex update` inspects the local rules-pack manifest and reports whether an update is available. Remote channel wiring lands in week 4.
+- `audithex update` inspects the local rules-pack manifest and reports whether an update is available against the remote channel.
 - `audithex init` writes a default `.audithex/config.json` into the current project.
 - `audithex version` prints the installed Audithex version.
 
@@ -19,7 +19,7 @@ The current build ships these commands:
 Per-user environment variables are loaded from a local `.env` file via `dotenv` and validated with `zod`:
 
 - `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` enable LLM-judge evals and the optional AI fallback extractor.
-- `AUDITHEX_AGENT_ENDPOINT` and `AUDITHEX_AGENT_AUTH` configure the dynamic tester (week 5).
+- `AUDITHEX_AGENT_ENDPOINT` and `AUDITHEX_AGENT_AUTH` configure the dynamic tester.
 - `AUDITHEX_AUTO_UPDATE_CHECK` toggles the daily update check.
 - `AUDITHEX_LLM_COST_CAP_USD` caps spend on LLM-judge calls per scan.
 - `AUDITHEX_LOCALE` overrides the UI language (currently `en` and `uk`).

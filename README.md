@@ -4,7 +4,7 @@ Read-only, local-first AI security audit for any LLM-using codebase. Maps every 
 
 Audithex is polyglot by design. Out of the box it ships native parsers for TypeScript/JavaScript and regex-based detectors that work across Python, PHP, Go, Java, Ruby and any other source language. An optional AI-fallback mode uses your own LLM API key to extract artifacts from files we don't yet parse natively. The set of scanned extensions and directories is configurable via environment variables and `.audithex/config.json`; in Phase 2 the same configuration is exposed in the local web UI.
 
-> Status: pre-alpha, week 2 of the Phase 1 roadmap. Rules ship as JSON documents (Mongoose-compatible schema) so the same payload moves untouched from the bundled CLI pack to `~/.audithex/rules-pack/` after `audithex update` and into MongoDB for the Phase 2 UI.
+> Status: pre-alpha. Phase 1 (read-only CLI) is under active development. Phase 2 (local Next.js web UI for history, diffs, and AI-fix suggestions) ships only if Phase 1 hits its traction targets.
 
 ---
 
@@ -15,9 +15,8 @@ Audithex runs on macOS, Linux, and Windows (WSL2 recommended). You need:
 | Tool | Minimum | Notes |
 |---|---|---|
 | **Node.js** | 22 LTS | Older versions fail with `engines` warnings. Use `nvm` to manage versions. |
-| **pnpm** | 9.15.0 | Installed automatically through `corepack` — do not install globally. |
-| **Git** | any recent | Required for repository cloning and the future `audithex update` flow. |
-| **Python 3** | optional | Only needed if you opt into the Presidio PII detector (week 5+). |
+| **yarn** | 4.13.0 | Installed automatically through `corepack` — do not install globally. |
+| **Git** | any recent | Required for cloning. |
 
 No database, no Docker, no Apple Developer cert. Everything runs out of a single Node process. The Phase 1 CLI keeps all on-disk state in plain JSON files under `~/.audithex/`.
 
@@ -25,30 +24,32 @@ No database, no Docker, no Apple Developer cert. Everything runs out of a single
 
 ## Install from source
 
-The repository is a `pnpm` monorepo. From scratch on a fresh machine:
+The repository is a yarn 4 monorepo. From scratch on a fresh machine:
 
 ```bash
 # 1. Get Node 22 with nvm (skip if already on Node 22)
 nvm install 22
 nvm use 22
 
-# 2. Activate the pinned pnpm version via corepack
+# 2. Activate the pinned yarn version via corepack
 corepack enable
-corepack prepare pnpm@9.15.0 --activate
+corepack prepare yarn@4.13.0 --activate
 
 # 3. Clone and install
-git clone git@github.com:audithex/audithex.git
+git clone git@github.com:rtsehynka/audithex.git
 cd audithex
-pnpm install     # ≈30s on first run, < 1s on warm runs
+yarn install                # ≈10s warm, ≈30s on first run
 
 # 4. Build all packages once (TypeScript -> dist/)
-pnpm build
+yarn build
 
 # 5. Verify everything is green
-pnpm verify      # lint + typecheck + test + jscpd + docs:check + locales:check + stubs:check
+yarn verify                 # lint + typecheck + test + jscpd + docs:check + locales:check + stubs:check
 ```
 
-The CLI executable lives at `apps/cli/bin/audithex.js` after `pnpm build`. There is no global install step yet; invoke the local binary directly during development.
+The CLI executable lives at `apps/cli/bin/audithex.js` after `yarn build`. There is no global install step yet; invoke the local binary directly during development.
+
+> If yarn complains that audithex isn't part of a parent workspace, this repo ships an empty `yarn.lock` for exactly that reason — it tells yarn the repo is a standalone project, not a child of any outer monorepo.
 
 ---
 
@@ -81,7 +82,7 @@ Exit codes are deterministic so CI pipelines can fail on critical findings:
 ```bash
 node apps/cli/bin/audithex.js version          # print installed version
 node apps/cli/bin/audithex.js init             # write .audithex/config.json in the current project
-node apps/cli/bin/audithex.js update           # report installed rules-pack version (remote channel: week 4)
+node apps/cli/bin/audithex.js update           # report installed rules-pack version + check remote channel
 node apps/cli/bin/audithex.js selftest         # pipeline smoke against the current working directory
 node apps/cli/bin/audithex.js --help           # full command listing
 ```
@@ -96,7 +97,7 @@ AUDITHEX_LOCALE=uk node apps/cli/bin/audithex.js scan .
 
 ## API keys and environment variables
 
-Audithex reads configuration from a local `.env` file (any project, including the one you scan). Nothing in this list is mandatory for a basic scan — the CLI runs end-to-end without a single key set. Keys unlock advanced features:
+Audithex reads configuration from a local `.env` file (any project, including the one you scan). **Nothing in this list is mandatory for a basic scan** — the CLI runs end-to-end without a single key set. Keys unlock advanced features:
 
 ```env
 # --- LLM-backed extractors and evals (all optional in Phase 1) --------------
@@ -104,7 +105,7 @@ Audithex reads configuration from a local `.env` file (any project, including th
 ANTHROPIC_API_KEY=sk-ant-api03-...
 OPENAI_API_KEY=sk-...
 
-# --- Dynamic agent testing (week 5 feature, safe to set ahead of time) -------
+# --- Dynamic agent testing --------------------------------------------------
 AUDITHEX_AGENT_ENDPOINT=https://your-agent.example.com/api/chat
 AUDITHEX_AGENT_AUTH=Bearer eyJhbGciOi...
 
@@ -119,7 +120,7 @@ AUDITHEX_LOCALE=en                    # en | uk
 AUDITHEX_HOME=/Users/you/.audithex    # where downloaded rules / history live
 AUDITHEX_LOCALES_ROOT=/abs/path       # only for packaged builds with relocated locales
 
-# --- Extension allowlist / blocklist (planned for week 3) -------------------
+# --- Extension allowlist / blocklist ----------------------------------------
 # AUDITHEX_SCAN_INCLUDE='**/*.{ts,tsx,py,php}'
 # AUDITHEX_SCAN_EXCLUDE='legacy/**,vendor/**'
 ```
@@ -130,8 +131,8 @@ The CLI validates the `.env` through a `zod` schema at startup. Malformed values
 
 | Variable | Required for | If absent |
 |---|---|---|
-| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | LLM-judge evals, AI fallback extractor, AI fix recommendations (Phase 2) | Audithex still runs every static rule and every regex-based extractor — only the LLM-backed features stay dormant. |
-| `AUDITHEX_AGENT_ENDPOINT` + `AUDITHEX_AGENT_AUTH` | Dynamic prompt-injection testing against your own running agent (week 5) | Dynamic tester is disabled; static + extractor pipeline is unaffected. |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | LLM-judge evals, AI fallback extractor, AI fix recommendations | Audithex still runs every static rule and every regex-based extractor — only the LLM-backed features stay dormant. |
+| `AUDITHEX_AGENT_ENDPOINT` + `AUDITHEX_AGENT_AUTH` | Dynamic prompt-injection testing against your own running agent | Dynamic tester is disabled; static + extractor pipeline is unaffected. |
 | `AUDITHEX_LLM_COST_CAP_USD` | Hard cap on per-scan LLM spend | Defaults to 1 USD. |
 | `AUDITHEX_AUTO_UPDATE_CHECK` | Daily rules-pack version check | Defaults to enabled. Set `false` for offline / air-gapped environments. |
 | `AUDITHEX_LOCALE` | UI language | Picks up `LANG` / `LC_ALL` else falls back to `en`. |
@@ -192,7 +193,7 @@ The rules engine is data-driven. Out of the box Audithex ships:
 - **20 TruffleHog-style secret patterns** for OpenAI, Anthropic, Google, Cohere, Mistral, Hugging Face, Replicate, GitHub, GitLab, Slack, Discord, AWS, Stripe, Twilio, SendGrid.
 - **Three rule engines**: `regex-in-code`, `regex-in-prompt`, `artifact-property`.
 
-Rules live as plain JSON inside `packages/core-rules/rules-pack/` and ship with the npm package. After `audithex update` (remote channel lands in week 4), the latest pack is written to `~/.audithex/rules-pack/current/`. If a user pack exists it overrides the bundled one; otherwise the bundled pack is used. The schema matches Mongoose models exactly so the same documents move into MongoDB in Phase 2 without migration.
+Rules live as plain JSON inside `packages/core-rules/rules-pack/` and ship with the npm package. After `audithex update` the latest pack is written to `~/.audithex/rules-pack/current/`. If a user pack exists it overrides the bundled one; otherwise the bundled pack is used. The schema matches Mongoose models exactly so the same documents move into MongoDB in Phase 2 without migration.
 
 To preview which rules are loaded right now:
 
@@ -216,7 +217,7 @@ audithex/
 │   ├── core-report            Console / JSON / Markdown report renderers
 │   ├── core-update            Rules-pack manifest reader + semver compare for the update channel
 │   ├── core-eval-runner       Fixture evaluator with precision / recall thresholds
-│   ├── core-payloads          Schema and loader for the attack payload library (week 5)
+│   ├── core-payloads          Schema and loader for the attack payload library
 │   ├── core-i18n              i18next loader auto-resolving locales/ root, namespace-aware t()
 │   └── core-types             Shared TypeScript types and the exit-code mapper
 ├── locales/{en,uk}/           UI strings, kept in parity by scripts/check-locale-parity.mjs
@@ -231,14 +232,14 @@ audithex/
 Every change must clear these before being marked complete. Run them locally; CI runs the same set on every PR.
 
 ```bash
-pnpm verify        # lint + typecheck + test + jscpd + docs:check + locales:check + stubs:check
-pnpm lint          # Biome
-pnpm typecheck     # tsc per workspace
-pnpm test          # Vitest (85 tests across 11 suites)
-pnpm dupes         # jscpd (TypeScript-only, 0 clones allowed)
-pnpm docs:check    # no TODO: placeholders in docs/
-pnpm locales:check # locales/en and locales/uk in full key parity
-pnpm stubs:check   # no "throw new Error('not implemented')" or "TODO: implement"
+yarn verify        # lint + typecheck + test + jscpd + docs:check + locales:check + stubs:check
+yarn lint          # Biome
+yarn typecheck     # tsc per workspace
+yarn test          # Vitest
+yarn dupes         # jscpd (TypeScript-only, 0 clones allowed)
+yarn docs:check    # no TODO: placeholders in docs/
+yarn locales:check # locales/en and locales/uk in full key parity
+yarn stubs:check   # no "throw new Error('not implemented')" or "TODO: implement"
 ```
 
 ---
@@ -247,13 +248,13 @@ pnpm stubs:check   # no "throw new Error('not implemented')" or "TODO: implement
 
 ```bash
 # Watch one CLI command during development
-pnpm --filter @audithex/cli dev -- scan ~/work/my-agent
+yarn workspace @audithex/cli dev -- scan ~/work/my-agent
 
 # Run a single workspace's tests
-pnpm --filter @audithex/core-rules test
+yarn workspace @audithex/core-rules test
 
 # Verify only locales after editing a translation
-pnpm locales:check
+yarn locales:check
 
 # Reset the rules-pack cache and force the bundled pack
 rm -rf ~/.audithex/rules-pack && node apps/cli/bin/audithex.js scan .
@@ -272,11 +273,14 @@ You ran a command under the wrong Node. Run `nvm use 22` in the shell that invok
 **`Cannot find matching keyid` from `corepack`**
 The OS-bundled corepack on older Node ships with stale signing keys. Switch to Node 22 first; that version's corepack ships with current keys.
 
+**`The nearest package directory doesn't seem to be part of the project declared in ...`**
+yarn 4 sees a parent `package.json` and thinks audithex must be a workspace of it. The repo's empty `yarn.lock` is the official escape hatch; if it ever gets deleted, run `touch yarn.lock` at the repo root and try again.
+
 **`Cannot find module '@audithex/core-languages'` during typecheck**
-A workspace package has not been built yet. Run `pnpm build` once.
+A workspace package has not been built yet. Run `yarn build` once.
 
 **`Module ... was compiled against a different Node.js version`**
-Native module from a previous Node install. Run `pnpm rebuild` while on Node 22.
+Native module from a previous Node install. Run `yarn rebuild` while on Node 22.
 
 **Scan reports no findings on a file you know is vulnerable**
 Check that the file extension is registered. `node -e "import('@audithex/core-languages').then(m => console.log(m.listExtensions()))"` lists what the scanner accepts. To add an extension, edit the language definition in `packages/core-languages/src/languages/` — the registry is the single source of truth.
@@ -292,4 +296,4 @@ The durable execution plan lives at `.claude/PROJECT_PLAN.md`. The 12 engineerin
 
 ## License
 
-AGPL-3.0-or-later. See `LICENSE` (added in week 5 packaging).
+AGPL-3.0-or-later.

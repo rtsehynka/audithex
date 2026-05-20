@@ -4,6 +4,15 @@ coverage/
 .turbo/
 .vitest-cache/
 
+# Yarn 4 — keep releases/patches/plugins if added later, ignore everything else
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*
+
 # OS
 .DS_Store
 Thumbs.db
@@ -16,7 +25,6 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
-pnpm-debug.log*
 yarn-debug.log*
 
 # Env

@@ -1,8 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getLanguageForFile } from '@audithex/core-languages';
-import type { Finding, RuleDocument, SecretPatternEntry } from '@audithex/core-types';
+import type { Finding, RuleDocument } from '@audithex/core-types';
 import type { EngineContext, RuleEngine } from './types.js';
+import { patternMatchesTagWhitelist, safeCompileRegex } from './utils.js';
 
 interface RegexInCodeParams {
   patternBundleId?: string;
@@ -109,8 +110,8 @@ function compilePatterns(
     if (bundle) {
       const whitelist = params.patternTagWhitelist;
       for (const entry of bundle.entries) {
-        if (!matchesTags(entry, whitelist)) continue;
-        const compiled = safeCompile(entry.regex);
+        if (!patternMatchesTagWhitelist(entry, whitelist)) continue;
+        const compiled = safeCompileRegex(entry.regex);
         if (!compiled) continue;
         out.push({
           regex: compiled,
@@ -125,7 +126,7 @@ function compilePatterns(
 
   if (params.inlinePatterns) {
     for (const inline of params.inlinePatterns) {
-      const compiled = safeCompile(inline.regex);
+      const compiled = safeCompileRegex(inline.regex);
       if (!compiled) continue;
       const item: CompiledPattern = {
         regex: compiled,
@@ -149,23 +150,6 @@ function compilePatterns(
   }
 
   return out;
-}
-
-function matchesTags(entry: SecretPatternEntry, whitelist?: string[]): boolean {
-  if (!whitelist || whitelist.length === 0) return true;
-  if (!entry.tags || entry.tags.length === 0) return false;
-  for (const tag of entry.tags) {
-    if (whitelist.includes(tag)) return true;
-  }
-  return false;
-}
-
-function safeCompile(source: string): RegExp | null {
-  try {
-    return new RegExp(source, 'g');
-  } catch {
-    return null;
-  }
 }
 
 function isCommentLine(line: string, prefixes: readonly string[]): boolean {

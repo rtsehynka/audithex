@@ -2,12 +2,13 @@
   "name": "audithex-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Local-first AI security audit tool for Node/TypeScript projects.",
+  "description": "Local-first AI security audit tool for any LLM-using codebase.",
   "license": "AGPL-3.0-or-later",
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "yarn@4.13.0",
   "engines": {
     "node": ">=22.0.0"
   },
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -20,8 +21,8 @@
     "docs:check": "node scripts/check-docs.mjs",
     "locales:check": "node scripts/check-locale-parity.mjs",
     "stubs:check": "node scripts/check-no-stubs.mjs",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm dupes && pnpm docs:check && pnpm locales:check && pnpm stubs:check",
-    "cli": "pnpm --filter @audithex/cli exec audithex"
+    "verify": "yarn lint && yarn typecheck && yarn test && yarn dupes && yarn docs:check && yarn locales:check && yarn stubs:check",
+    "cli": "yarn workspace @audithex/cli exec audithex"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

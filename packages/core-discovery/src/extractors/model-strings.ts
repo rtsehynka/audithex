@@ -1,7 +1,7 @@
 import { MODEL_PATTERNS } from '@audithex/core-languages';
 import type { DiscoveryArtifact } from '@audithex/core-types';
 import type { Extractor, ExtractorInput } from './types.js';
-import { isCommentLineAt, offsetToLineColumn } from './utils.js';
+import { iterateNonCommentMatches } from './utils.js';
 
 /**
  * Detects literal model identifiers (`"claude-opus-4-7"`, `"gpt-4o"` …)
@@ -14,29 +14,24 @@ export const modelStringsExtractor: Extractor = {
   extract(input: ExtractorInput): DiscoveryArtifact[] {
     const out: DiscoveryArtifact[] = [];
     for (const pattern of MODEL_PATTERNS) {
-      pattern.regex.lastIndex = 0;
-      for (const match of input.content.matchAll(pattern.regex)) {
-        const index = match.index ?? 0;
-        if (
-          input.language.capabilities.scansAsCode &&
-          isCommentLineAt(input.content, index, input.language.lineCommentPrefixes)
-        ) {
-          continue;
-        }
-        const matchText = match[0];
-        const { line, column } = offsetToLineColumn(input.content, index);
+      for (const hit of iterateNonCommentMatches(
+        input.content,
+        pattern.regex,
+        input.language.lineCommentPrefixes,
+        input.language.capabilities.scansAsCode,
+      )) {
         out.push({
           kind: 'model-string',
           confidence: 'regex',
           location: {
             file: input.relPath,
-            line,
-            column,
-            endLine: line,
-            endColumn: column + matchText.length,
+            line: hit.line,
+            column: hit.column,
+            endLine: hit.line,
+            endColumn: hit.column + hit.text.length,
           },
           detail: {
-            modelId: matchText,
+            modelId: hit.text,
             provider: pattern.provider,
             language: input.language.id,
           },
