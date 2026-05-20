@@ -1,0 +1,49 @@
+{
+  "_id": "R007",
+  "schemaVersion": "0.1",
+  "severity": "critical",
+  "owasp": ["LLM08"],
+  "cwe": "CWE-78",
+  "engine": "regex-in-code",
+  "params": {
+    "skipComments": true,
+    "inlinePatterns": [
+      {
+        "id": "node-child-process-exec",
+        "languages": ["typescript", "javascript"],
+        "regex": "\\b(?:child_process\\.)?(?:exec|execSync|spawn|spawnSync)\\s*\\(\\s*`[^`]*\\$\\{",
+        "messageParamKind": "child_process.exec/spawn with interpolated command"
+      },
+      {
+        "id": "py-subprocess-shell",
+        "languages": ["python"],
+        "regex": "subprocess\\.(?:Popen|run|call|check_output)\\s*\\([^)]*shell\\s*=\\s*True",
+        "messageParamKind": "subprocess.* with shell=True"
+      },
+      {
+        "id": "py-os-system",
+        "languages": ["python"],
+        "regex": "\\bos\\.system\\s*\\(",
+        "messageParamKind": "os.system"
+      },
+      {
+        "id": "php-shell-exec",
+        "languages": ["php"],
+        "regex": "\\b(?:shell_exec|system|passthru|exec|popen|proc_open)\\s*\\(\\s*\\$",
+        "messageParamKind": "shell_exec/system/passthru"
+      },
+      {
+        "id": "ruby-system",
+        "languages": ["ruby"],
+        "regex": "\\b(?:system|exec|`)\\s*[(\"']",
+        "messageParamKind": "system/exec/backticks"
+      }
+    ]
+  },
+  "messageKey": "findings:R007.message",
+  "fixKey": "findings:R007.fix",
+  "meta": {
+    "title": "Shell command built from interpolated input",
+    "category": "command-injection"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "_id": "R001",
+  "schemaVersion": "0.1",
+  "severity": "critical",
+  "owasp": ["LLM06"],
+  "cwe": "CWE-798",
+  "engine": "regex-in-code",
+  "params": {
+    "patternBundleId": "secrets-llm-providers-v1",
+    "patternTagWhitelist": ["llm", "high-confidence", "cloud", "model-host"],
+    "skipComments": true,
+    "perFileLimit": 100
+  },
+  "messageKey": "findings:R001.message",
+  "fixKey": "findings:R001.fix",
+  "meta": {
+    "title": "Hardcoded API key literal in source",
+    "category": "secrets",
+    "references": ["https://owasp.org/www-project-top-10-for-large-language-model-applications/"]
+  }
+}

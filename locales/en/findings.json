@@ -23,7 +23,52 @@
   },
   "R001": {
     "title": "API key literal in source",
-    "message": "Found a {{provider}} API key literal in source code.",
-    "fix": "Move the secret to an environment variable and read it via process.env. Rotate the exposed key immediately."
+    "message": "Hardcoded {{provider}} secret matched pattern {{patternId}} in source.",
+    "fix": "Move the secret to an environment variable and read it via process.env (or os.environ in Python, getenv in PHP). Rotate the exposed key immediately."
+  },
+  "R002": {
+    "title": "API key inside a system prompt",
+    "message": "Hardcoded {{provider}} secret matched pattern {{patternId}} inside a system prompt.",
+    "fix": "Never inline credentials in a prompt. Reference the secret from environment configuration that the agent reads at runtime, and rotate the exposed key."
+  },
+  "R003": {
+    "title": "Tool defined without a description",
+    "message": "Tool \"{{toolName}}\" ({{framework}}) has no description field. Models call tools more reliably when descriptions explain when to use them.",
+    "fix": "Add a one-sentence description that explains the tool's purpose and constraints to the model."
+  },
+  "R004": {
+    "title": "Tool defined without a parameter schema",
+    "message": "Tool \"{{toolName}}\" ({{framework}}) exposes no structured parameter schema. The model can pass arbitrary input shapes.",
+    "fix": "Declare an explicit input_schema (Anthropic) or parameters JSON Schema (OpenAI) with property types and a required list."
+  },
+  "R005": {
+    "title": "Dynamic code execution primitive in source",
+    "message": "Use of {{messageParamKind}} can execute arbitrary code derived from model or user input.",
+    "fix": "Avoid eval-class primitives entirely. If you must transform an LLM response into behavior, parse it through a structured schema (Zod / Pydantic) and dispatch through an explicit allowlist."
+  },
+  "R006": {
+    "title": "Unbounded file write reachable from input",
+    "message": "{{messageParamKind}} appears to write to a path built from input. A model or user can choose arbitrary destinations.",
+    "fix": "Compute the destination from a fixed base directory and validate the resolved path stays inside it (Path.resolve + startsWith / realpath checks)."
+  },
+  "R007": {
+    "title": "Shell command built from interpolated input",
+    "message": "{{messageParamKind}} runs a shell command assembled from interpolated input — classic command injection surface.",
+    "fix": "Pass arguments as an array (execFile, spawn argv list) instead of building a shell string. Validate against a fixed allowlist before invoking any binary."
+  },
+  "R008": {
+    "title": "HTTP request to an interpolated URL (SSRF)",
+    "message": "{{messageParamKind}} issues a request whose URL is composed from input. A model or user can target internal services.",
+    "fix": "Build the URL from a fixed base + an allowlisted path component. Reject hosts that are private, link-local, or not on your allowlist."
+  },
+  "R009": {
+    "title": "SQL statement assembled by string concatenation",
+    "message": "{{messageParamKind}} concatenates input into a SQL statement.",
+    "fix": "Use parameterised queries (prepared statements) or a query builder. Never interpolate model or user input into raw SQL."
+  },
+  "R010": {
+    "title": "Model output rendered as HTML without sanitization",
+    "message": "{{messageParamKind}} renders content into the DOM without sanitisation, enabling stored XSS via model output.",
+    "fix": "Render model output as text (textContent / React children) or sanitise with DOMPurify before injection. Never trust LLM output to be safe HTML."
   }
 }

@@ -23,7 +23,52 @@
   },
   "R001": {
     "title": "API ключ у вихідному коді",
-    "message": "Знайдено літерал {{provider}} API ключа у вихідному коді.",
-    "fix": "Перенесіть секрет у змінну середовища і читайте через process.env. Негайно відкличте розкритий ключ."
+    "message": "Hardcoded секрет {{provider}} зматчив шаблон {{patternId}} у вихідному коді.",
+    "fix": "Перенесіть секрет у змінну середовища (process.env у Node, os.environ у Python, getenv у PHP). Негайно відкличте розкритий ключ."
+  },
+  "R002": {
+    "title": "API ключ всередині system prompt",
+    "message": "Hardcoded секрет {{provider}} зматчив шаблон {{patternId}} всередині system prompt.",
+    "fix": "Ніколи не вбудовуйте облікові дані у промпт. Зчитуйте їх з конфігурації середовища під час виконання, і відкличте розкритий ключ."
+  },
+  "R003": {
+    "title": "Tool оголошено без description",
+    "message": "Tool \"{{toolName}}\" ({{framework}}) не має поля description. Моделі викликають tools надійніше, коли description пояснює коли його застосовувати.",
+    "fix": "Додайте однотактовий опис призначення та обмежень tool для моделі."
+  },
+  "R004": {
+    "title": "Tool оголошено без parameter schema",
+    "message": "Tool \"{{toolName}}\" ({{framework}}) не має structured parameter schema. Модель може передати довільну форму вводу.",
+    "fix": "Опишіть явну input_schema (Anthropic) або parameters JSON Schema (OpenAI) з типами властивостей і списком required."
+  },
+  "R005": {
+    "title": "Динамічне виконання коду у вихідному коді",
+    "message": "Використання {{messageParamKind}} може виконати довільний код, побудований з вводу моделі чи користувача.",
+    "fix": "Уникайте eval-класу примітивів повністю. Якщо треба перетворити відповідь LLM на дію — парсіть через structured schema (Zod / Pydantic) і диспатчіть через явний allowlist."
+  },
+  "R006": {
+    "title": "Невалідований запис файлу з вводу",
+    "message": "{{messageParamKind}} пише у шлях, побудований з вводу. Модель чи користувач можуть обрати довільний destination.",
+    "fix": "Обчислюйте шлях з фіксованої base directory і перевіряйте що resolved path лежить всередині неї (Path.resolve + startsWith / realpath)."
+  },
+  "R007": {
+    "title": "Shell команда з інтерпольованого вводу",
+    "message": "{{messageParamKind}} виконує shell команду, зібрану з інтерпольованого вводу — класичний command injection surface.",
+    "fix": "Передавайте аргументи масивом (execFile, spawn argv list) замість будувати shell string. Валідуйте проти фіксованого allowlist перед запуском будь-якого бінарника."
+  },
+  "R008": {
+    "title": "HTTP запит до інтерпольованого URL (SSRF)",
+    "message": "{{messageParamKind}} робить запит, URL якого зібраний з вводу. Модель чи користувач можуть таргетити внутрішні сервіси.",
+    "fix": "Збирайте URL з фіксованого base + дозволеного path component. Відхиляйте хости, які private, link-local або не у вашому allowlist."
+  },
+  "R009": {
+    "title": "SQL statement зібраний string concatenation",
+    "message": "{{messageParamKind}} конкатенує ввід у SQL statement.",
+    "fix": "Використовуйте parameterised queries (prepared statements) або query builder. Ніколи не інтерполюйте ввід моделі чи користувача у raw SQL."
+  },
+  "R010": {
+    "title": "Output моделі рендериться як HTML без sanitization",
+    "message": "{{messageParamKind}} рендерить контент у DOM без sanitization — це stored XSS через output моделі.",
+    "fix": "Рендеріть output моделі як text (textContent / React children) або sanitize через DOMPurify перед інжекцією. Ніколи не довіряйте LLM output як безпечному HTML."
   }
 }

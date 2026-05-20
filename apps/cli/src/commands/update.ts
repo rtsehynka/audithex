@@ -1,5 +1,7 @@
+import { join } from 'node:path';
 import { t } from '@audithex/core-i18n';
-import { BUNDLED_RULES_VERSION, evaluateUpdate, readLocalManifest } from '@audithex/core-update';
+import { loadRulesPack } from '@audithex/core-rules';
+import { audithexHome, evaluateUpdate } from '@audithex/core-update';
 import type { Command } from 'commander';
 import type { AudithexEnv } from '../env.js';
 
@@ -9,11 +11,13 @@ export function registerUpdateCommand(program: Command, env: AudithexEnv): void 
     .command('update')
     .description(t('cli:commands.update.summary'))
     .action(() => {
-      const manifest = readLocalManifest();
-      const current = manifest?.version ?? BUNDLED_RULES_VERSION;
+      const userRulesPackDir = join(audithexHome(), 'rules-pack', 'current');
+      const pack = loadRulesPack({ userRulesPackDir });
+      const current = pack.manifest.version;
       process.stdout.write(`${t('update:checking')}\n`);
       process.stdout.write(`${t('update:currentVersion', { version: current })}\n`);
-      // The remote channel is wired in week 4; until then we only report state.
+      // The remote channel is wired in week 4. For now report that we
+      // are already at the version present on disk (bundled or user).
       const evaluation = evaluateUpdate(current, current);
       if (evaluation.upToDate) {
         process.stdout.write(`${t('update:alreadyLatest')}\n`);

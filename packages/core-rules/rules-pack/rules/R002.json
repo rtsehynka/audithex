@@ -1,0 +1,18 @@
+{
+  "_id": "R002",
+  "schemaVersion": "0.1",
+  "severity": "critical",
+  "owasp": ["LLM06"],
+  "cwe": "CWE-798",
+  "engine": "regex-in-prompt",
+  "params": {
+    "patternBundleId": "secrets-llm-providers-v1",
+    "patternTagWhitelist": ["llm", "high-confidence", "cloud"]
+  },
+  "messageKey": "findings:R002.message",
+  "fixKey": "findings:R002.fix",
+  "meta": {
+    "title": "Hardcoded API key inside a system prompt",
+    "category": "secrets-in-prompts"
+  }
+}

@@ -91,6 +91,84 @@ export interface Rule extends RuleDefinition {
   check: (discovery: DiscoveryResult) => Finding[];
 }
 
+/**
+ * Data-driven rule document. Each rule ships as a plain JSON document
+ * shaped like a Mongoose model so the same payload moves untouched
+ * between the bundled CLI rules-pack, `~/.audithex/rules-pack/` after
+ * `audithex update`, and the Phase 2 MongoDB store.
+ *
+ * The `engine` field selects the evaluator; `params` is the engine's
+ * input contract. Engines and their param shapes live in
+ * `@audithex/core-rules`.
+ */
+export type RuleEngineKind =
+  | 'regex-in-code'
+  | 'regex-in-prompt'
+  | 'artifact-property'
+  | 'artifact-presence';
+
+export interface RuleDocument {
+  _id: string;
+  schemaVersion: '0.1';
+  severity: Severity;
+  owasp: OwaspLLMCategory[];
+  cwe?: string;
+  engine: RuleEngineKind;
+  params: Record<string, unknown>;
+  messageKey: string;
+  fixKey: string;
+  /** When provided, restricts the rule to artifacts/files of these languages by id. */
+  languages?: string[];
+  /** Defaults to true when absent. */
+  enabled?: boolean;
+  /** Free-form metadata: references, authors, history. */
+  meta?: Record<string, unknown>;
+}
+
+/**
+ * Reusable pattern bundle referenced by one or more rule documents.
+ * Modelled after the TruffleHog detector layout (id + regex + provider
+ * + reference) so existing public databases can be imported with a
+ * simple field rename.
+ */
+export interface SecretPatternEntry {
+  id: string;
+  provider: string;
+  description: string;
+  regex: string;
+  references?: string[];
+  tags?: string[];
+}
+
+export interface PatternBundle {
+  _id: string;
+  schemaVersion: '0.1';
+  kind: 'secret-patterns' | 'code-patterns';
+  source: string;
+  license?: string;
+  entries: SecretPatternEntry[];
+}
+
+export interface RulesPackManifest {
+  _id: string;
+  schemaVersion: '0.1';
+  version: string;
+  releasedAt: string;
+  ruleIds: string[];
+  patternBundleIds: string[];
+  /** Hex-encoded sha256 of the manifest payload, set by the publisher. */
+  checksumSha256?: string;
+}
+
+export interface RulesPack {
+  manifest: RulesPackManifest;
+  rules: RuleDocument[];
+  patternBundles: PatternBundle[];
+  /** Where the pack was loaded from: bundled (ships with CLI) or user (~/.audithex). */
+  source: 'bundled' | 'user';
+  rootPath: string;
+}
+
 export type ExitCode = 0 | 1 | 2;
 
 export function exitCodeFromFindings(findings: readonly Finding[]): ExitCode {

@@ -1,10 +1,11 @@
+import { join } from 'node:path';
 import { resolve } from 'node:path';
 import { discover } from '@audithex/core-discovery';
 import { t } from '@audithex/core-i18n';
 import { type ReportFormat, renderReport } from '@audithex/core-report';
-import { runRules } from '@audithex/core-rules';
+import { loadRulesPack, runRules } from '@audithex/core-rules';
 import { type ScanResult, exitCodeFromFindings } from '@audithex/core-types';
-import { BUNDLED_RULES_VERSION } from '@audithex/core-update';
+import { audithexHome } from '@audithex/core-update';
 import type { Command } from 'commander';
 import type { AudithexEnv } from '../env.js';
 import { AUDITHEX_VERSION } from '../index.js';
@@ -33,13 +34,15 @@ export function registerScanCommand(program: Command, env: AudithexEnv): void {
       const startedAt = Date.now();
       const absolute = resolve(process.cwd(), path);
       const discovery = discover({ rootPath: absolute });
-      const findings = runRules(discovery);
+      const userRulesPackDir = join(audithexHome(), 'rules-pack', 'current');
+      const pack = loadRulesPack({ userRulesPackDir });
+      const findings = runRules(discovery, { rulesPack: pack });
       const result: ScanResult = {
         rootPath: discovery.rootPath,
         scannedAt: discovery.scannedAt,
         discovery: discovery.summary,
         findings,
-        rulesVersion: BUNDLED_RULES_VERSION,
+        rulesVersion: `${pack.manifest.version} (${pack.source})`,
         audithexVersion: AUDITHEX_VERSION,
         elapsedMs: Date.now() - startedAt,
       };

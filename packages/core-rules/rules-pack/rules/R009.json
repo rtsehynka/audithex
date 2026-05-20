@@ -1,0 +1,49 @@
+{
+  "_id": "R009",
+  "schemaVersion": "0.1",
+  "severity": "critical",
+  "owasp": ["LLM02"],
+  "cwe": "CWE-89",
+  "engine": "regex-in-code",
+  "params": {
+    "skipComments": true,
+    "inlinePatterns": [
+      {
+        "id": "js-sql-template-keywords",
+        "languages": ["typescript", "javascript"],
+        "regex": "`[^`]*\\b(?:SELECT|INSERT|UPDATE|DELETE|DROP|UNION)\\b[^`]*\\$\\{[^`]*`",
+        "messageParamKind": "SQL template literal with interpolation"
+      },
+      {
+        "id": "js-sql-concat",
+        "languages": ["typescript", "javascript"],
+        "regex": "['\"][^'\"]*\\b(?:SELECT|INSERT|UPDATE|DELETE)\\b[^'\"]*['\"]\\s*\\+\\s*[a-zA-Z_$]",
+        "messageParamKind": "SQL string concatenation"
+      },
+      {
+        "id": "py-sql-f-string",
+        "languages": ["python"],
+        "regex": "f['\"][^'\"]*\\b(?:SELECT|INSERT|UPDATE|DELETE|DROP|UNION)\\b[^'\"]*\\{[^'\"]*['\"]",
+        "messageParamKind": "SQL f-string"
+      },
+      {
+        "id": "py-sql-percent",
+        "languages": ["python"],
+        "regex": "['\"][^'\"]*\\b(?:SELECT|INSERT|UPDATE|DELETE)\\b[^'\"]*['\"]\\s*%\\s*[a-zA-Z_]",
+        "messageParamKind": "SQL %-formatting"
+      },
+      {
+        "id": "php-sql-interp",
+        "languages": ["php"],
+        "regex": "['\"][^'\"]*\\b(?:SELECT|INSERT|UPDATE|DELETE|DROP)\\b[^'\"]*\\$",
+        "messageParamKind": "SQL with variable interpolation"
+      }
+    ]
+  },
+  "messageKey": "findings:R009.message",
+  "fixKey": "findings:R009.fix",
+  "meta": {
+    "title": "SQL statement built by string concatenation",
+    "category": "sql-injection"
+  }
+}

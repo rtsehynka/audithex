@@ -1,0 +1,17 @@
+{
+  "_id": "R004",
+  "schemaVersion": "0.1",
+  "severity": "high",
+  "owasp": ["LLM07"],
+  "engine": "artifact-property",
+  "params": {
+    "artifactKind": "tool-definition",
+    "predicate": { "field": "detail.hasSchema", "equals": false }
+  },
+  "messageKey": "findings:R004.message",
+  "fixKey": "findings:R004.fix",
+  "meta": {
+    "title": "Tool defined without a structured parameter schema",
+    "category": "tool-design"
+  }
+}

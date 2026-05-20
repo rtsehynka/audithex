@@ -1,0 +1,56 @@
+{
+  "_id": "R005",
+  "schemaVersion": "0.1",
+  "severity": "critical",
+  "owasp": ["LLM02", "LLM08"],
+  "cwe": "CWE-94",
+  "engine": "regex-in-code",
+  "params": {
+    "languages": ["typescript", "javascript", "python", "php", "ruby"],
+    "skipComments": true,
+    "inlinePatterns": [
+      {
+        "id": "js-eval-call",
+        "languages": ["typescript", "javascript"],
+        "regex": "\\beval\\s*\\(",
+        "messageParamKind": "eval"
+      },
+      {
+        "id": "js-function-ctor",
+        "languages": ["typescript", "javascript"],
+        "regex": "\\bnew\\s+Function\\s*\\(",
+        "messageParamKind": "Function constructor"
+      },
+      {
+        "id": "js-vm-runIn",
+        "languages": ["typescript", "javascript"],
+        "regex": "\\bvm\\.runIn[A-Za-z]*\\s*\\(",
+        "messageParamKind": "vm.runIn*"
+      },
+      {
+        "id": "py-eval-exec",
+        "languages": ["python"],
+        "regex": "\\b(?:eval|exec)\\s*\\(",
+        "messageParamKind": "eval/exec"
+      },
+      {
+        "id": "php-eval",
+        "languages": ["php"],
+        "regex": "\\beval\\s*\\(",
+        "messageParamKind": "eval"
+      },
+      {
+        "id": "ruby-eval",
+        "languages": ["ruby"],
+        "regex": "\\b(?:eval|instance_eval|class_eval)\\s*\\(",
+        "messageParamKind": "eval"
+      }
+    ]
+  },
+  "messageKey": "findings:R005.message",
+  "fixKey": "findings:R005.fix",
+  "meta": {
+    "title": "Dynamic code execution primitive in source",
+    "category": "code-injection"
+  }
+}

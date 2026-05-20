@@ -1,0 +1,43 @@
+{
+  "_id": "R008",
+  "schemaVersion": "0.1",
+  "severity": "high",
+  "owasp": ["LLM08"],
+  "cwe": "CWE-918",
+  "engine": "regex-in-code",
+  "params": {
+    "skipComments": true,
+    "inlinePatterns": [
+      {
+        "id": "node-fetch-template",
+        "languages": ["typescript", "javascript"],
+        "regex": "\\b(?:fetch|axios(?:\\.[a-z]+)?|got|undici\\.request)\\s*\\(\\s*`[^`]*\\$\\{",
+        "messageParamKind": "fetch/axios with interpolated URL"
+      },
+      {
+        "id": "py-requests-format",
+        "languages": ["python"],
+        "regex": "\\brequests\\.(?:get|post|put|delete|patch|request)\\s*\\([^)]*(?:f['\"]|\\.format\\s*\\()",
+        "messageParamKind": "requests.* with f-string or .format URL"
+      },
+      {
+        "id": "php-curl-interpolated",
+        "languages": ["php"],
+        "regex": "curl_setopt\\s*\\([^,]+,\\s*CURLOPT_URL\\s*,\\s*['\"][^'\"]*\\$",
+        "messageParamKind": "curl_setopt CURLOPT_URL with variable"
+      },
+      {
+        "id": "ruby-net-http",
+        "languages": ["ruby"],
+        "regex": "Net::HTTP\\.(?:get|post|start)\\s*\\([^)]*#\\{",
+        "messageParamKind": "Net::HTTP with interpolated URL"
+      }
+    ]
+  },
+  "messageKey": "findings:R008.message",
+  "fixKey": "findings:R008.fix",
+  "meta": {
+    "title": "HTTP request built from interpolated input (potential SSRF)",
+    "category": "ssrf"
+  }
+}

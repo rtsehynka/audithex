@@ -1,5 +1,5 @@
 {
-  "name": "@audithex/core-rules",
+  "name": "@audithex/core-languages",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -11,14 +11,13 @@
       "import": "./dist/index.js"
     }
   },
-  "files": ["dist", "rules-pack"],
+  "files": ["dist"],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests --dir ./src"
   },
   "dependencies": {
-    "@audithex/core-languages": "workspace:*",
     "@audithex/core-types": "workspace:*"
   },
   "devDependencies": {

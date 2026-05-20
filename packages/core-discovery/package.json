@@ -18,6 +18,7 @@
     "test": "vitest run --passWithNoTests --dir ./src"
   },
   "dependencies": {
+    "@audithex/core-languages": "workspace:*",
     "@audithex/core-types": "workspace:*",
     "ignore": "6.0.2"
   },

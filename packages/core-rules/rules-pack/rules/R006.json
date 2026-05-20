@@ -1,0 +1,43 @@
+{
+  "_id": "R006",
+  "schemaVersion": "0.1",
+  "severity": "high",
+  "owasp": ["LLM08"],
+  "cwe": "CWE-22",
+  "engine": "regex-in-code",
+  "params": {
+    "skipComments": true,
+    "inlinePatterns": [
+      {
+        "id": "node-fs-write-template",
+        "languages": ["typescript", "javascript"],
+        "regex": "fs\\.(?:writeFile|writeFileSync|appendFile|appendFileSync|createWriteStream)\\s*\\(\\s*`[^`]*\\$\\{",
+        "messageParamKind": "fs.writeFile* with interpolated path"
+      },
+      {
+        "id": "node-fs-write-concat",
+        "languages": ["typescript", "javascript"],
+        "regex": "fs\\.(?:writeFile|writeFileSync|appendFile|appendFileSync)\\s*\\([^)]*\\+\\s*[a-zA-Z_$]",
+        "messageParamKind": "fs.writeFile* with concatenated path"
+      },
+      {
+        "id": "py-open-write",
+        "languages": ["python"],
+        "regex": "\\bopen\\s*\\([^)]+,[^)]*['\"]w['\"][^)]*\\)",
+        "messageParamKind": "open(path, 'w')"
+      },
+      {
+        "id": "php-file-put-contents",
+        "languages": ["php"],
+        "regex": "\\b(?:file_put_contents|fwrite|fputs)\\s*\\(\\s*\\$",
+        "messageParamKind": "file_put_contents"
+      }
+    ]
+  },
+  "messageKey": "findings:R006.message",
+  "fixKey": "findings:R006.fix",
+  "meta": {
+    "title": "Unbounded file write operation reachable from tool input",
+    "category": "tool-design"
+  }
+}

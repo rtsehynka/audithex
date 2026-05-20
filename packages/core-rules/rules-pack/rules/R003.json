@@ -1,0 +1,17 @@
+{
+  "_id": "R003",
+  "schemaVersion": "0.1",
+  "severity": "high",
+  "owasp": ["LLM07"],
+  "engine": "artifact-property",
+  "params": {
+    "artifactKind": "tool-definition",
+    "predicate": { "field": "detail.hasDescription", "equals": false }
+  },
+  "messageKey": "findings:R003.message",
+  "fixKey": "findings:R003.fix",
+  "meta": {
+    "title": "Tool defined without a description",
+    "category": "tool-design"
+  }
+}

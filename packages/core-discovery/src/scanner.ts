@@ -1,7 +1,9 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { join, relative, resolve, sep } from 'node:path';
-import type { DiscoveryResult, DiscoverySummary } from '@audithex/core-types';
+import { getLanguageForFile, isScannableFile } from '@audithex/core-languages';
+import type { DiscoveryArtifact, DiscoveryResult, DiscoverySummary } from '@audithex/core-types';
+import { BUILTIN_EXTRACTORS, type Extractor } from './extractors/index.js';
 
 interface IgnoreInstance {
   add(content: string): IgnoreInstance;
@@ -16,8 +18,27 @@ export interface DiscoverOptions {
   rootPath: string;
   followSymlinks?: boolean;
   maxFiles?: number;
+  /**
+   * Override the extractor pipeline. Defaults to BUILTIN_EXTRACTORS.
+   * Pass an empty array to skip artifact extraction entirely (useful
+   * for fast file-counting smoke tests).
+   */
+  extractors?: readonly Extractor[];
+  /**
+   * Skip reading any file larger than this many bytes. Defaults to
+   * 1 MiB — enough for prompts and most source files, fast enough to
+   * keep large-repo scans well under the week-2 budget.
+   */
+  maxFileSizeBytes?: number;
 }
 
+const DEFAULT_MAX_FILE_SIZE = 1024 * 1024;
+
+/**
+ * Directories always skipped regardless of `.gitignore` contents.
+ * These are conventional build / dependency / cache dirs that no audit
+ * needs to descend into.
+ */
 const ALWAYS_IGNORE = new Set([
   'node_modules',
   '.git',
@@ -30,20 +51,11 @@ const ALWAYS_IGNORE = new Set([
   '.vitest-cache',
   '.svelte-kit',
   '.cache',
-]);
-
-const TEXT_EXTENSIONS = new Set([
-  '.ts',
-  '.tsx',
-  '.js',
-  '.jsx',
-  '.mjs',
-  '.cjs',
-  '.json',
-  '.md',
-  '.txt',
-  '.yaml',
-  '.yml',
+  '.venv',
+  'venv',
+  '__pycache__',
+  'vendor',
+  'target',
 ]);
 
 function extensionOf(name: string): string {
@@ -87,13 +99,13 @@ export function discover(options: DiscoverOptions): DiscoveryResult {
   const maxFiles = options.maxFiles ?? Number.POSITIVE_INFINITY;
   const startedAt = Date.now();
 
-  const allFiles: string[] = [];
+  const collectedFiles: string[] = [];
   let envFiles = 0;
   let skippedByGitignore = 0;
 
   const stack: string[] = [root];
   while (stack.length > 0) {
-    if (allFiles.length >= maxFiles) break;
+    if (collectedFiles.length >= maxFiles) break;
     const current = stack.pop();
     if (!current) break;
 
@@ -110,7 +122,6 @@ export function discover(options: DiscoverOptions): DiscoveryResult {
       const rel = relative(root, full);
       if (rel === '' || rel === '.') continue;
 
-      // Normalize to forward slashes for the `ignore` package
       const relPosix = rel.split(sep).join('/');
 
       let entryStat: ReturnType<typeof statSync>;
@@ -137,21 +148,56 @@ export function discover(options: DiscoverOptions): DiscoveryResult {
 
       if (looksLikeEnvFile(entry)) {
         envFiles += 1;
-        allFiles.push(relPosix);
+        collectedFiles.push(relPosix);
         continue;
       }
 
-      const ext = extensionOf(entry);
-      if (TEXT_EXTENSIONS.has(ext)) {
-        allFiles.push(relPosix);
+      // Central registry decides whether this extension is in scope.
+      if (isScannableFile(entry)) {
+        collectedFiles.push(relPosix);
       }
     }
   }
 
-  const byExtension = classifyByExtension(allFiles);
+  const byExtension = classifyByExtension(collectedFiles);
+
+  const extractors = options.extractors ?? BUILTIN_EXTRACTORS;
+  const maxFileSize = options.maxFileSizeBytes ?? DEFAULT_MAX_FILE_SIZE;
+  const artifacts: DiscoveryArtifact[] = [];
+
+  if (extractors.length > 0) {
+    for (const rel of collectedFiles) {
+      const language = getLanguageForFile(rel);
+      if (!language) continue;
+      const absolute = join(root, rel);
+      try {
+        const stat = statSync(absolute);
+        if (stat.size > maxFileSize) continue;
+      } catch {
+        continue;
+      }
+      let content: string;
+      try {
+        content = readFileSync(absolute, 'utf8');
+      } catch {
+        continue;
+      }
+      const ext = extensionOf(rel);
+      const input = {
+        rootPath: root,
+        relPath: rel,
+        extension: ext,
+        content,
+        language,
+      };
+      for (const extractor of extractors) {
+        artifacts.push(...extractor.extract(input));
+      }
+    }
+  }
 
   const summary: DiscoverySummary = {
-    totalFiles: allFiles.length,
+    totalFiles: collectedFiles.length,
     byExtension,
     envFiles,
     skippedByGitignore,
@@ -162,6 +208,7 @@ export function discover(options: DiscoverOptions): DiscoveryResult {
     rootPath: root,
     scannedAt: new Date().toISOString(),
     summary,
-    artifacts: [],
+    files: collectedFiles,
+    artifacts,
   };
 }

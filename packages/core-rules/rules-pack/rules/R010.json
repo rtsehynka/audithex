@@ -1,0 +1,49 @@
+{
+  "_id": "R010",
+  "schemaVersion": "0.1",
+  "severity": "high",
+  "owasp": ["LLM02"],
+  "cwe": "CWE-79",
+  "engine": "regex-in-code",
+  "params": {
+    "skipComments": true,
+    "inlinePatterns": [
+      {
+        "id": "react-dangerous-html",
+        "languages": ["typescript", "javascript"],
+        "regex": "dangerouslySetInnerHTML\\s*=\\s*\\{\\s*\\{",
+        "messageParamKind": "dangerouslySetInnerHTML"
+      },
+      {
+        "id": "js-inner-html-assign",
+        "languages": ["typescript", "javascript"],
+        "regex": "\\.innerHTML\\s*=\\s*[^=]",
+        "messageParamKind": ".innerHTML assignment"
+      },
+      {
+        "id": "js-document-write",
+        "languages": ["typescript", "javascript"],
+        "regex": "document\\.write\\s*\\(",
+        "messageParamKind": "document.write"
+      },
+      {
+        "id": "py-jinja-safe",
+        "languages": ["python"],
+        "regex": "\\{\\{[^}]+\\|\\s*safe\\s*\\}\\}",
+        "messageParamKind": "Jinja2 |safe filter"
+      },
+      {
+        "id": "php-echo-raw",
+        "languages": ["php"],
+        "regex": "<\\?(?:php|=)\\s*echo\\s+\\$_(?:GET|POST|REQUEST)",
+        "messageParamKind": "echo of raw superglobal"
+      }
+    ]
+  },
+  "messageKey": "findings:R010.message",
+  "fixKey": "findings:R010.fix",
+  "meta": {
+    "title": "Model or user output written to HTML without sanitization",
+    "category": "xss"
+  }
+}

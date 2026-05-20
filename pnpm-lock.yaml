@@ -84,6 +84,9 @@ importers:
 
   packages/core-discovery:
     dependencies:
+      '@audithex/core-languages':
+        specifier: workspace:*
+        version: link:../core-languages
       '@audithex/core-types':
         specifier: workspace:*
         version: link:../core-types
@@ -118,6 +121,16 @@ importers:
         specifier: 5.7.2
         version: 5.7.2
 
+  packages/core-languages:
+    dependencies:
+      '@audithex/core-types':
+        specifier: workspace:*
+        version: link:../core-types
+    devDependencies:
+      typescript:
+        specifier: 5.7.2
+        version: 5.7.2
+
   packages/core-payloads:
     devDependencies:
       typescript:
@@ -139,6 +152,9 @@ importers:
 
   packages/core-rules:
     dependencies:
+      '@audithex/core-languages':
+        specifier: workspace:*
+        version: link:../core-languages
       '@audithex/core-types':
         specifier: workspace:*
         version: link:../core-types
