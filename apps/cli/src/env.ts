@@ -23,6 +23,7 @@ const schema = z.object({
   AUDITHEX_LOCALE: z.string().optional(),
   AUDITHEX_HOME: z.string().optional(),
   AUDITHEX_LOCALES_ROOT: z.string().optional(),
+  AUDITHEX_RULES_PACK_URL: z.string().url().optional(),
 });
 
 export type AudithexEnv = z.infer<typeof schema>;

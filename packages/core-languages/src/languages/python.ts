@@ -32,4 +32,9 @@ export const python: LanguageDefinition = {
     },
     { provider: 'ollama', regex: /^\s*(?:from\s+ollama\b|import\s+ollama\b)/gm },
   ],
+  // Anthropic kwarg shape and OpenAI message-dict shape. Group 1 = prompt body.
+  systemPromptKwargPatterns: [
+    /\bsystem\s*=\s*(?:r|u|f|rb|br|rf|fr|b)?["']([^"'\n]{40,})["']/g,
+    /["']role["']\s*:\s*["']system["']\s*,\s*["']content["']\s*:\s*["']([^"'\n]{40,})["']/g,
+  ],
 };

@@ -1,8 +1,19 @@
 {
   "checking": "Checking for updates",
+  "fetching": "Fetching rules-pack manifest from {{url}}…",
   "currentVersion": "Current rules-pack: {{version}}",
   "latestVersion": "Latest rules-pack: {{version}}",
   "alreadyLatest": "Already on the latest rules pack.",
   "available": "Update available: {{from}} → {{to}}",
-  "notYetImplemented": "The remote update channel is not yet configured in this build."
+  "applyPrompt": "Apply this update?",
+  "applyDeclined": "Update declined; leaving rules pack at {{version}}.",
+  "installed": "Rules pack {{from}} → {{to}} installed. Run `audithex scan` to use it.",
+  "pruned": "Pruned {{count}} historical pack version(s).",
+  "fetchFailed": "Failed to fetch rules pack: {{error}}",
+  "checksumMismatch": "Rules pack checksum mismatch (expected {{expected}}, got {{actual}}). Refusing to install.",
+  "invalidPayload": "Downloaded rules pack is malformed: {{reason}}",
+  "selftestFailed": "Selftest failed on rules pack {{version}}; staying on {{previous}}.",
+  "flags": {
+    "yes": "Skip the apply-update confirmation prompt"
+  }
 }

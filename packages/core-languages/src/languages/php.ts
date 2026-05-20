@@ -19,4 +19,9 @@ export const php: LanguageDefinition = {
       regex: /\buse\s+Google\\(?:Cloud\\AIPlatform|GenerativeAI)[A-Za-z0-9_\\]*\s*;/g,
     },
   ],
+  // PHP-array shapes — both single-key 'system' and OpenAI message arrays.
+  systemPromptKwargPatterns: [
+    /["']system["']\s*=>\s*["']([^"'\n]{40,})["']/g,
+    /["']role["']\s*=>\s*["']system["']\s*,\s*["']content["']\s*=>\s*["']([^"'\n]{40,})["']/g,
+  ],
 };

@@ -17,6 +17,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --passWithNoTests --dir ./src"
   },
+  "dependencies": {
+    "@audithex/core-types": "workspace:*"
+  },
   "devDependencies": {
     "typescript": "5.7.2"
   }

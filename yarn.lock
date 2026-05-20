@@ -110,6 +110,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@audithex/core-update@workspace:packages/core-update"
   dependencies:
+    "@audithex/core-types": "workspace:*"
     typescript: "npm:5.7.2"
   languageName: unknown
   linkType: soft

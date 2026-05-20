@@ -27,6 +27,13 @@ export interface LanguageDefinition {
    * Lets extractors map a file to a Provider with a single regex pass.
    */
   sdkImportPatterns: readonly SdkImportPattern[];
+  /**
+   * Regex patterns for code-embedded system prompts. Each pattern MUST
+   * use a single capture group whose group 1 is the prompt body text.
+   * Languages whose preferredParser is 'ts-compiler' leave this empty
+   * because the extractor uses the AST instead.
+   */
+  systemPromptKwargPatterns?: readonly RegExp[];
 }
 
 export interface LanguageCapabilities {

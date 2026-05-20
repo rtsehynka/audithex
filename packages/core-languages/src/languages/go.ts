@@ -23,4 +23,9 @@ export const go: LanguageDefinition = {
     { provider: 'langchain', regex: /"github\.com\/tmc\/langchaingo(?:\/[a-z0-9-]+)*"/g },
     { provider: 'ollama', regex: /"github\.com\/ollama\/ollama(?:\/[a-z0-9-]+)*"/g },
   ],
+  // Anthropic Go SDK uses System: <string>, OpenAI Go uses Role/Content struct fields.
+  systemPromptKwargPatterns: [
+    /\b[Ss]ystem\s*:\s*"([^"\n]{40,})"/g,
+    /\bRole\s*:\s*"system"\s*,\s*Content\s*:\s*"([^"\n]{40,})"/g,
+  ],
 };

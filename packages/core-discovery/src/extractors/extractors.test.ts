@@ -112,10 +112,87 @@ describe('system-prompts extractor', () => {
     expect(out).toHaveLength(0);
   });
 
-  it('ignores code files (code-embedded prompts come later)', () => {
-    const body = `You are a helper. ${'Reply in JSON. '.repeat(30)}`;
-    const out = systemPromptsExtractor.extract(inputFor('a.ts', `// ${body}`));
+  it('finds an Anthropic-style system kwarg in TypeScript via AST', () => {
+    const code = `
+      import Anthropic from '@anthropic-ai/sdk';
+      const client = new Anthropic();
+      await client.messages.create({
+        model: 'claude-opus-4-7',
+        system: "You are a strict banking compliance assistant who only answers in formal English.",
+        messages: [],
+      });
+    `;
+    const out = systemPromptsExtractor.extract(inputFor('src/agent.ts', code));
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      confidence: 'ast',
+      detail: { origin: 'code-embedded', language: 'typescript' },
+    });
+  });
+
+  it('finds an OpenAI role/content pair in JavaScript via AST', () => {
+    const code = `
+      const messages = [
+        { role: 'system', content: 'You are a strict banking compliance assistant who answers tersely.' },
+        { role: 'user', content: 'hi' },
+      ];
+    `;
+    const out = systemPromptsExtractor.extract(inputFor('src/agent.js', code));
+    expect(out).toHaveLength(1);
+    expect(out[0]?.confidence).toBe('ast');
+    expect(out[0]?.detail).toMatchObject({ origin: 'code-embedded', language: 'javascript' });
+  });
+
+  it('ignores TS files where system kwarg holds a variable reference', () => {
+    const code = `
+      import Anthropic from '@anthropic-ai/sdk';
+      const SYSTEM = "irrelevant";
+      const client = new Anthropic();
+      await client.messages.create({ system: SYSTEM, messages: [] });
+    `;
+    const out = systemPromptsExtractor.extract(inputFor('src/agent.ts', code));
     expect(out).toHaveLength(0);
+  });
+
+  it('finds a system= kwarg in Python via registry regex', () => {
+    const code =
+      'import anthropic\nclient = anthropic.Anthropic()\n' +
+      'resp = client.messages.create(\n' +
+      '  model="claude-opus-4-7",\n' +
+      '  system="You are a strict banking compliance assistant who answers tersely.",\n' +
+      '  messages=[],\n' +
+      ')\n';
+    const out = systemPromptsExtractor.extract(inputFor('agent.py', code));
+    expect(out).toHaveLength(1);
+    expect(out[0]).toMatchObject({
+      confidence: 'regex',
+      detail: { origin: 'code-embedded', language: 'python' },
+    });
+  });
+
+  it('finds a PHP-array system entry via registry regex', () => {
+    const code =
+      "<?php\n$resp = $client->messages()->create([\n  'model' => 'claude-opus-4-7',\n" +
+      "  'system' => 'You are a strict banking compliance assistant who answers tersely.',\n" +
+      "  'messages' => [],\n]);\n";
+    const out = systemPromptsExtractor.extract(inputFor('agent.php', code));
+    expect(out).toHaveLength(1);
+    expect(out[0]?.detail).toMatchObject({ origin: 'code-embedded', language: 'php' });
+  });
+
+  it('finds a Go System: field via registry regex', () => {
+    const code =
+      'package main\n\nimport "context"\n\n' +
+      'func main() {\n' +
+      '  params := MessageNewParams{\n' +
+      '    Model: "claude-opus-4-7",\n' +
+      '    System: "You are a strict banking compliance assistant who answers tersely.",\n' +
+      '  }\n' +
+      '  _ = params\n' +
+      '}\n';
+    const out = systemPromptsExtractor.extract(inputFor('agent.go', code));
+    expect(out).toHaveLength(1);
+    expect(out[0]?.detail).toMatchObject({ origin: 'code-embedded', language: 'go' });
   });
 });
 
