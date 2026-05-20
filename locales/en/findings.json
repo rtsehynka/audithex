@@ -1,0 +1,29 @@
+{
+  "severity": {
+    "critical": "Critical",
+    "high": "High",
+    "medium": "Medium",
+    "low": "Low"
+  },
+  "category": {
+    "title": "Findings by category"
+  },
+  "owasp": {
+    "title": "OWASP LLM Top 10 coverage",
+    "LLM01": "Prompt Injection",
+    "LLM02": "Insecure Output Handling",
+    "LLM03": "Training Data Poisoning",
+    "LLM04": "Model Denial of Service",
+    "LLM05": "Supply Chain Vulnerabilities",
+    "LLM06": "Sensitive Information Disclosure",
+    "LLM07": "Insecure Plugin Design",
+    "LLM08": "Excessive Agency",
+    "LLM09": "Overreliance",
+    "LLM10": "Model Theft"
+  },
+  "R001": {
+    "title": "API key literal in source",
+    "message": "Found a {{provider}} API key literal in source code.",
+    "fix": "Move the secret to an environment variable and read it via process.env. Rotate the exposed key immediately."
+  }
+}

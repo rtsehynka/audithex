@@ -1,0 +1,8 @@
+{
+  "checking": "Перевірка оновлень",
+  "currentVersion": "Поточний rules-pack: {{version}}",
+  "latestVersion": "Останній rules-pack: {{version}}",
+  "alreadyLatest": "У вас уже найновіший rules pack.",
+  "available": "Доступне оновлення: {{from}} → {{to}}",
+  "notYetImplemented": "Канал оновлень ще не сконфігуровано у цьому білді."
+}

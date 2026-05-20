@@ -1,0 +1,54 @@
+export type PayloadCategory =
+  | 'prompt_injection_direct'
+  | 'prompt_injection_indirect'
+  | 'jailbreak_roleplay'
+  | 'system_prompt_leak'
+  | 'tool_misuse'
+  | 'data_exfiltration'
+  | 'xss_in_output'
+  | 'pii_extraction'
+  | 'dos_token_flood'
+  | 'multi_shot_jailbreak';
+
+export type PayloadJudgeType = 'regex' | 'refusal' | 'llm';
+
+export interface PayloadJudge {
+  type: PayloadJudgeType;
+  config?: Record<string, unknown>;
+}
+
+export interface Payload {
+  id: string;
+  source: string;
+  version: string;
+  category: PayloadCategory;
+  subcategory?: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  payload: string;
+  expectedBehavior: 'refusal' | 'sanitized_output' | 'no_action';
+  judge: PayloadJudge;
+  tags: string[];
+  references: string[];
+}
+
+// The bundled set starts empty; week 5 wires the upstream payload sync.
+const BUNDLED_PAYLOADS: readonly Payload[] = [];
+
+export function listPayloads(): readonly Payload[] {
+  return BUNDLED_PAYLOADS;
+}
+
+export function filterPayloads(filter: {
+  category?: PayloadCategory;
+  tag?: string;
+}): readonly Payload[] {
+  return BUNDLED_PAYLOADS.filter((p) => {
+    if (filter.category && p.category !== filter.category) return false;
+    if (filter.tag && !p.tags.includes(filter.tag)) return false;
+    return true;
+  });
+}
+
+export function payloadCount(): number {
+  return BUNDLED_PAYLOADS.length;
+}

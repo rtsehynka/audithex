@@ -1,0 +1,40 @@
+node_modules/
+dist/
+coverage/
+.turbo/
+.vitest-cache/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/*
+!.idea/.gitignore
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Local config / state
+.audithex/
+*.tsbuildinfo
+
+# Test artifacts
+**/__screenshots__/
+
+# Generated reports
+report.html
+report.json
+report.md
+/CLAUDE.md
+/.claude/
+/.github/

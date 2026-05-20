@@ -1,0 +1,10 @@
+{
+  "threshold": 1,
+  "minTokens": 70,
+  "minLines": 8,
+  "reporters": ["console"],
+  "pattern": "{apps,packages}/**/src/**/*.{ts,tsx,js,mjs}",
+  "ignore": ["**/*.test.ts", "**/dist/**"],
+  "gitignore": true,
+  "format": ["typescript", "javascript"]
+}

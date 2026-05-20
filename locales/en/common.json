@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "Audithex",
+    "tagline": "Read-only AI security audit for your Node/TypeScript code"
+  },
+  "exitCode": {
+    "clean": "No findings",
+    "lowMedium": "Only low/medium findings",
+    "highCritical": "High or critical findings present"
+  },
+  "errors": {
+    "envInvalid": "Environment configuration is invalid",
+    "pathNotFound": "Path does not exist: {{path}}",
+    "pathNotDirectory": "Path is not a directory: {{path}}",
+    "unknownCommand": "Unknown command: {{command}}"
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "audithex-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Local-first AI security audit tool for Node/TypeScript projects.",
+  "license": "AGPL-3.0-or-later",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "test": "turbo run test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "turbo run typecheck",
+    "dupes": "jscpd --noSymlinks --formats-exts typescript:ts,tsx --ignore '**/node_modules/**,**/dist/**,**/coverage/**,**/.turbo/**' apps packages",
+    "docs:check": "node scripts/check-docs.mjs",
+    "locales:check": "node scripts/check-locale-parity.mjs",
+    "stubs:check": "node scripts/check-no-stubs.mjs",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm dupes && pnpm docs:check && pnpm locales:check && pnpm stubs:check",
+    "cli": "pnpm --filter @audithex/cli exec audithex"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@types/node": "22.10.5",
+    "jscpd": "4.0.5",
+    "turbo": "2.3.3",
+    "typescript": "5.7.2",
+    "vitest": "2.1.8"
+  }
+}

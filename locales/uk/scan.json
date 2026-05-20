@@ -1,0 +1,22 @@
+{
+  "starting": "Сканування {{path}}",
+  "discovering": "Пошук файлів",
+  "summary": {
+    "title": "Підсумок discovery",
+    "totalFiles": "Усього файлів: {{count}}",
+    "typescriptFiles": "TypeScript файлів: {{count}}",
+    "javascriptFiles": "JavaScript файлів: {{count}}",
+    "jsonFiles": "JSON файлів: {{count}}",
+    "markdownFiles": "Markdown файлів: {{count}}",
+    "envFiles": ".env файлів: {{count}}",
+    "skipped": "Пропущено (gitignore): {{count}}",
+    "elapsedMs": "Час: {{ms}}мс"
+  },
+  "phase": {
+    "walk": "Обхід дерева директорій",
+    "filter": "Фільтрація за .gitignore",
+    "classify": "Класифікація файлів"
+  },
+  "noFindings": "Проблем не знайдено — проєкт виглядає чисто.",
+  "completed": "Сканування завершено."
+}

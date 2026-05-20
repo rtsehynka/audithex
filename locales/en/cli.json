@@ -1,0 +1,27 @@
+{
+  "description": "Audit your Node/TypeScript AI applications for OWASP LLM Top 10 issues.",
+  "commands": {
+    "scan": {
+      "summary": "Scan a project directory for AI security issues",
+      "options": {
+        "report": "Report format (console, html, json, md)",
+        "severity": "Minimum severity to display (critical, high, medium, low)",
+        "dynamic": "Run dynamic tests against AUDITHEX_AGENT_ENDPOINT",
+        "ci": "CI mode: silent output, structured exit codes",
+        "noUpdateCheck": "Skip the daily update check"
+      }
+    },
+    "update": {
+      "summary": "Check for and apply rule + payload updates"
+    },
+    "selftest": {
+      "summary": "Run self-evaluating tests against bundled fixtures"
+    },
+    "init": {
+      "summary": "Create .audithex/config.json in the current project"
+    },
+    "version": {
+      "summary": "Print the installed Audithex version"
+    }
+  }
+}

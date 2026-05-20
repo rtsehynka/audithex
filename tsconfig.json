@@ -1,0 +1,15 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./apps/cli" },
+    { "path": "./packages/core-types" },
+    { "path": "./packages/core-i18n" },
+    { "path": "./packages/core-discovery" },
+    { "path": "./packages/core-rules" },
+    { "path": "./packages/core-payloads" },
+    { "path": "./packages/core-eval-runner" },
+    { "path": "./packages/core-report" },
+    { "path": "./packages/core-update" },
+    { "path": "./packages/core-db" }
+  ]
+}

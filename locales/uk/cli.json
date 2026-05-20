@@ -1,0 +1,27 @@
+{
+  "description": "Аудит Node/TypeScript AI-застосунків за чеклістом OWASP LLM Top 10.",
+  "commands": {
+    "scan": {
+      "summary": "Сканувати директорію проєкту на проблеми AI security",
+      "options": {
+        "report": "Формат звіту (console, html, json, md)",
+        "severity": "Мінімальна важливість для відображення (critical, high, medium, low)",
+        "dynamic": "Запустити динамічні тести проти AUDITHEX_AGENT_ENDPOINT",
+        "ci": "CI режим: мінімальний вивід + структуровані exit-коди",
+        "noUpdateCheck": "Пропустити щоденну перевірку оновлень"
+      }
+    },
+    "update": {
+      "summary": "Перевірити та застосувати оновлення правил і payloads"
+    },
+    "selftest": {
+      "summary": "Виконати самотестування на bundled fixtures"
+    },
+    "init": {
+      "summary": "Створити .audithex/config.json у поточному проєкті"
+    },
+    "version": {
+      "summary": "Показати встановлену версію Audithex"
+    }
+  }
+}

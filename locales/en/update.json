@@ -1,0 +1,8 @@
+{
+  "checking": "Checking for updates",
+  "currentVersion": "Current rules-pack: {{version}}",
+  "latestVersion": "Latest rules-pack: {{version}}",
+  "alreadyLatest": "Already on the latest rules pack.",
+  "available": "Update available: {{from}} → {{to}}",
+  "notYetImplemented": "The remote update channel is not yet configured in this build."
+}

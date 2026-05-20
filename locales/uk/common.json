@@ -1,0 +1,17 @@
+{
+  "app": {
+    "name": "Audithex",
+    "tagline": "Read-only аудит безпеки AI для вашого Node/TypeScript коду"
+  },
+  "exitCode": {
+    "clean": "Проблем не знайдено",
+    "lowMedium": "Лише проблеми низької / середньої важливості",
+    "highCritical": "Знайдено проблеми високої або критичної важливості"
+  },
+  "errors": {
+    "envInvalid": "Конфігурація середовища некоректна",
+    "pathNotFound": "Шлях не існує: {{path}}",
+    "pathNotDirectory": "Шлях не є директорією: {{path}}",
+    "unknownCommand": "Невідома команда: {{command}}"
+  }
+}

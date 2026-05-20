@@ -1,0 +1,22 @@
+{
+  "starting": "Scanning {{path}}",
+  "discovering": "Discovering files",
+  "summary": {
+    "title": "Discovery summary",
+    "totalFiles": "Total files: {{count}}",
+    "typescriptFiles": "TypeScript files: {{count}}",
+    "javascriptFiles": "JavaScript files: {{count}}",
+    "jsonFiles": "JSON files: {{count}}",
+    "markdownFiles": "Markdown files: {{count}}",
+    "envFiles": ".env files: {{count}}",
+    "skipped": "Skipped (gitignore): {{count}}",
+    "elapsedMs": "Elapsed: {{ms}}ms"
+  },
+  "phase": {
+    "walk": "Walking directory tree",
+    "filter": "Filtering by .gitignore",
+    "classify": "Classifying files"
+  },
+  "noFindings": "No findings — your project looks clean.",
+  "completed": "Scan complete."
+}
