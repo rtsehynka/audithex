@@ -1,0 +1,22 @@
+{
+  "mongoMissing": "MONGODB_URI is not configured. Set it in .env before running `audithex user`.",
+  "invalidEmail": "Please provide a valid email address.",
+  "passwordTooShort": "Password must be at least 8 characters long.",
+  "cancelled": "Cancelled — no user was created.",
+  "create": {
+    "summary": "Create the single local web-UI user (interactive password)",
+    "ok": "User {{email}} created.",
+    "rotated": "Password rotated for user {{email}}.",
+    "exists": "A user with email {{email}} already exists. Re-run with --force to rotate the password.",
+    "failed": "Could not create user: {{error}}",
+    "flags": {
+      "email": "Skip the email prompt and use this address",
+      "password": "Skip the password prompt and use this value (avoid in shared shells)",
+      "force": "Overwrite the password when a user with this email already exists"
+    },
+    "prompts": {
+      "email": "Email for the local web-UI user",
+      "password": "Password for the local web-UI user (>=8 characters)"
+    }
+  }
+}

@@ -4,7 +4,9 @@ import { registerHistoryCommand } from './commands/history.js';
 import { registerInitCommand } from './commands/init.js';
 import { registerScanCommand } from './commands/scan.js';
 import { registerSelftestCommand } from './commands/selftest.js';
+import { registerUiCommand } from './commands/ui.js';
 import { registerUpdateCommand } from './commands/update.js';
+import { registerUserCommand } from './commands/user.js';
 import { registerVersionCommand } from './commands/version.js';
 import { loadEnv } from './env.js';
 
@@ -32,6 +34,8 @@ export async function main(argv: readonly string[]): Promise<number> {
   registerUpdateCommand(program, env);
   registerSelftestCommand(program, env);
   registerHistoryCommand(program, env);
+  registerUiCommand(program, env);
+  registerUserCommand(program, env);
   registerInitCommand(program, env);
   registerVersionCommand(program);
 

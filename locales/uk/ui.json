@@ -1,0 +1,14 @@
+{
+  "starting": "Audithex UI ({{mode}}) стартує на {{url}}",
+  "stopped": "Audithex UI зупинено ({{reason}}).",
+  "mongoMissing": "MONGODB_URI не задано. Задайте у .env перед `audithex ui`.",
+  "sessionSecretMissing": "AUDITHEX_UI_SESSION_SECRET не задано (>=32 символи). Задайте у .env перед `audithex ui`.",
+  "webMissing": "Web-додаток не знайдено за шляхом {{path}}. Чи є директорія apps/web у репо?",
+  "nextMissing": "Бінарник Next.js не знайдено у apps/web/node_modules. Виконайте `yarn install`.",
+  "notBuilt": "apps/web ще не зібрано. Виконайте `yarn workspace @audithex/web run build` або передайте `--dev` для dev-сервера.",
+  "flags": {
+    "port": "Порт для локального web UI (default: 7777)",
+    "dev": "Запустити `next dev` (hot reload) замість `next start`",
+    "noOpen": "Не відкривати URL у браузері автоматично"
+  }
+}

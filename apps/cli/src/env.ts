@@ -35,6 +35,18 @@ const schema = z.object({
         { message: 'MONGODB_URI must start with mongodb:// or mongodb+srv://' },
       ),
   ),
+  AUDITHEX_UI_SESSION_SECRET: z.preprocess(
+    (v) => (typeof v === 'string' && v.length === 0 ? undefined : v),
+    z.string().min(32).optional(),
+  ),
+  AUDITHEX_UI_PORT: z
+    .string()
+    .default('7777')
+    .transform((v) => {
+      const n = Number.parseInt(v, 10);
+      if (!Number.isFinite(n) || n <= 0 || n > 65_535) return 7777;
+      return n;
+    }),
 });
 
 export type AudithexEnv = z.infer<typeof schema>;

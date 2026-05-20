@@ -20,6 +20,12 @@
     "history": {
       "summary": "List or inspect scan runs persisted in MongoDB"
     },
+    "ui": {
+      "summary": "Start the local web UI on http://localhost:<port>"
+    },
+    "user": {
+      "summary": "Manage the local web-UI user (create, rotate password)"
+    },
     "init": {
       "summary": "Create .audithex/config.json in the current project"
     },

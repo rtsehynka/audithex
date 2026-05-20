@@ -17,7 +17,7 @@
     "lint:fix": "biome check --write .",
     "format": "biome format --write .",
     "typecheck": "turbo run typecheck",
-    "dupes": "jscpd --noSymlinks --formats-exts typescript:ts,tsx --ignore '**/node_modules/**,**/dist/**,**/coverage/**,**/.turbo/**' apps packages",
+    "dupes": "jscpd --noSymlinks --formats-exts typescript:ts,tsx --ignore '**/node_modules/**,**/dist/**,**/coverage/**,**/.turbo/**,**/.next/**' apps packages",
     "docs:check": "node scripts/check-docs.mjs",
     "locales:check": "node scripts/check-locale-parity.mjs",
     "stubs:check": "node scripts/check-no-stubs.mjs",

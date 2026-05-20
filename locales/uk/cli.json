@@ -20,6 +20,12 @@
     "history": {
       "summary": "Переглянути або відкрити збережені у MongoDB історичні скани"
     },
+    "ui": {
+      "summary": "Запустити локальний web UI на http://localhost:<port>"
+    },
+    "user": {
+      "summary": "Керування користувачем web UI (створити, змінити пароль)"
+    },
     "init": {
       "summary": "Створити .audithex/config.json у поточному проєкті"
     },

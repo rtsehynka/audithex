@@ -6,7 +6,18 @@
     "useIgnoreFile": true
   },
   "files": {
-    "ignore": ["dist", "node_modules", "coverage", ".turbo", "**/*.snap", "fixtures/**"]
+    "ignore": [
+      "dist",
+      "node_modules",
+      "coverage",
+      ".turbo",
+      ".next",
+      "**/.next/**",
+      "**/*.snap",
+      "fixtures/**",
+      "**/cypress/screenshots/**",
+      "**/cypress/videos/**"
+    ]
   },
   "organizeImports": {
     "enabled": true

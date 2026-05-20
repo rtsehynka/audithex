@@ -10,8 +10,9 @@ The scanner is polyglot. It ships native TypeScript Compiler API parsers for `.t
 
 ## What you get out of the box
 
-- **CLI commands:** `scan`, `update`, `selftest`, `history`, `init`, `version`
-- **Optional MongoDB persistence** — point `MONGODB_URI` at any Mongo and every scan is saved to the `scan_runs` collection for review through `audithex history`. The CLI runs fully without MongoDB; persistence is purely opt-in.
+- **CLI commands:** `scan`, `update`, `selftest`, `history`, `ui`, `user`, `init`, `version`
+- **Optional MongoDB persistence** — point `MONGODB_URI` at any Mongo and every scan is saved to the `scan_runs` collection for review through `audithex history` and the local web UI. The CLI runs fully without MongoDB; persistence is purely opt-in.
+- **Local web UI** — `audithex ui` boots a single-user dashboard on `http://localhost:7777` (Next.js 15 + React 19 + Tailwind 3, bcrypt-signed cookie auth, Cypress-covered).
 - **10 rules (R001 – R010)** covering OWASP LLM02, LLM06, LLM07, LLM08, mapped to CWE-22, 78, 79, 89, 94, 798, 918
 - **20 secret patterns** for OpenAI, Anthropic, Google, Cohere, Mistral, Hugging Face, Replicate, GitHub, GitLab, Slack, Discord, AWS, Stripe, Twilio, SendGrid
 - **3 rule engines:** `regex-in-code`, `regex-in-prompt`, `artifact-property`
@@ -89,6 +90,8 @@ Variables Audithex understands:
 | `AUDITHEX_LOCALES_ROOT` | Absolute path to the locales directory (packaged builds only) | walked up from the package's install location |
 | `AUDITHEX_RULES_PACK_URL` | Git URL the `update` command clones / pulls from | `https://github.com/audithex/rules-pack.git` |
 | `MONGODB_URI` | Connection string for the optional persistence layer. Required for `audithex history`; transparent for `audithex scan`. Must start with `mongodb://` or `mongodb+srv://`. | unset (persistence disabled) |
+| `AUDITHEX_UI_SESSION_SECRET` | HMAC key for the web UI's signed session cookie. **At least 32 characters.** Required for `audithex ui`. Generate with `openssl rand -base64 48`. | unset (web UI refuses to boot) |
+| `AUDITHEX_UI_PORT` | Default port for the local web UI. Can be overridden per-invocation with `audithex ui --port <port>`. | `7777` |
 
 Audithex **never** sends data to a third party. The two LLM keys above are used only when you explicitly run an LLM-using action; the request then goes straight from your machine to the provider you chose.
 
@@ -227,6 +230,47 @@ If a scan runs while Mongo is unreachable, it logs `Could not persist scan to Mo
 
 ---
 
+## Open the local web UI
+
+The web UI is a single-user dashboard on `http://localhost:7777`. Authentication is bcrypt over a Mongo-stored user, sessions are HMAC-signed cookies (no third-party service). It needs both `MONGODB_URI` and `AUDITHEX_UI_SESSION_SECRET` set.
+
+```bash
+# 1. Generate a session secret (32+ characters)
+openssl rand -base64 48 | tr -d '\n'
+
+# 2. Add it (and MONGODB_URI) to .env, then start MongoDB
+yarn infra:up
+
+# 3. Create the local user (interactive password prompt)
+yarn build                                              # build all packages once
+node apps/cli/bin/audithex.js user create               # asks for email + password
+
+# 4. Build the web app and boot the UI
+yarn workspace @audithex/web run build
+node apps/cli/bin/audithex.js ui                        # opens localhost:7777
+node apps/cli/bin/audithex.js ui --dev --no-open        # dev server, do not open browser
+node apps/cli/bin/audithex.js ui --port 8080            # change the port
+```
+
+The UI redirects unauthenticated visitors to `/login`; signing in lands them on `/` (the scan history landing page). `Sign out` clears the cookie and returns to `/login`.
+
+The UI runs entirely on `localhost` — no traffic leaves your machine. Cypress covers the login flow end-to-end:
+
+```bash
+yarn workspace @audithex/web run cypress:e2e            # orchestrator: in-memory Mongo + seeded user + `next start` + cypress run
+yarn workspace @audithex/web run cypress:e2e:dev        # same, but `next dev` for hot reload
+yarn workspace @audithex/web run cypress:open           # interactive cypress runner against an already-running server
+yarn workspace @audithex/web run screenshots            # Puppeteer screenshots → ~/Desktop/audithex-u2-<date>/
+```
+
+### Rotate the password
+
+```bash
+node apps/cli/bin/audithex.js user create --force       # prompts for a new password for the existing user
+```
+
+---
+
 ## Run the self-evaluating engine
 
 `selftest` runs the full pipeline against the bundled `fixtures/fixture-banking-bot/` (intentionally-vulnerable banking chatbot) and asserts the result against `expected-findings.json` (10 ground-truth findings, one per rule R001 – R010).
@@ -301,7 +345,9 @@ Override one rule's severity or disable it entirely:
 ```
 audithex/
 ├── apps/
-│   └── cli/                   Node 22 CLI: commander, @clack/prompts, dotenv, zod, i18next
+│   ├── cli/                   Node 22 CLI: commander, @clack/prompts, dotenv, zod, i18next
+│   └── web/                   Next.js 15 + React 19 + Tailwind 3 — local single-user dashboard
+│                              (server-action auth, signed-cookie sessions, Cypress e2e suite)
 ├── packages/
 │   ├── core-languages         Central language registry (TS, JS, Python, PHP, Go, Java, Ruby, plain-text)
 │   ├── core-discovery         gitignore-aware walker + 6 multi-language artifact extractors
@@ -349,6 +395,7 @@ Test count by workspace:
 | `@audithex/core-update` | 13 |
 | `@audithex/core-persistence` | 11 (in-memory MongoDB via `mongodb-memory-server`) |
 | `@audithex/cli` | 15 (incl. banking-bot selftest, exit-code coverage, end-to-end Mongo-backed `history`) |
+| `@audithex/web` (Cypress) | 3 end-to-end specs (`/login` redirect, invalid-creds error, sign-in + sign-out round-trip) |
 | `@audithex/core-i18n` | 7 |
 | `@audithex/core-report` | 3 |
 | `@audithex/core-eval-runner` | 3 |

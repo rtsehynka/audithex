@@ -1,0 +1,14 @@
+{
+  "starting": "Audithex UI ({{mode}}) starting on {{url}}",
+  "stopped": "Audithex UI stopped ({{reason}}).",
+  "mongoMissing": "MONGODB_URI is not configured. Set it in .env before running `audithex ui`.",
+  "sessionSecretMissing": "AUDITHEX_UI_SESSION_SECRET is not configured (>=32 chars). Set it in .env before running `audithex ui`.",
+  "webMissing": "Could not locate the web app at {{path}}. Did you check out the apps/web directory?",
+  "nextMissing": "Next.js binary not found inside apps/web/node_modules. Run `yarn install` first.",
+  "notBuilt": "apps/web has not been built. Run `yarn workspace @audithex/web run build` or pass `--dev` to launch the dev server.",
+  "flags": {
+    "port": "Port for the local web UI (default: 7777)",
+    "dev": "Run `next dev` (hot reload) instead of `next start`",
+    "noOpen": "Do not open the URL in a browser automatically"
+  }
+}
