@@ -1,36 +1,37 @@
-import type { ReactNode } from 'react';
+import type { ReactElement } from 'react';
+import ScanHistoryPage from '../components/scan-history-page';
 import { requireSession } from '../lib/auth';
+import { listScans } from '../lib/queries';
 import { logoutAction } from './logout/actions';
 
-export default async function HomePage(): Promise<ReactNode> {
+interface SearchParams {
+  skip?: string;
+  limit?: string;
+}
+
+export const dynamic = 'force-dynamic';
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>;
+}): Promise<ReactElement> {
   const session = await requireSession();
-  return (
-    <main className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-12">
-      <header className="border-b border-[var(--color-border)] pb-4">
-        <h1 className="text-2xl font-semibold text-[var(--color-accent)]">Audithex</h1>
-        <p className="text-sm text-[var(--color-text-muted)]">
-          Signed in as <span data-testid="session-email">{session.email}</span>.
-        </p>
-      </header>
+  const params = await searchParams;
+  const limit = clamp(parseIntOr(params.limit), 5, 100, 25);
+  const skip = clamp(parseIntOr(params.skip), 0, Number.POSITIVE_INFINITY, 0);
+  const data = await listScans({ limit, skip });
+  return <ScanHistoryPage data={data} sessionEmail={session.email} signOut={logoutAction} />;
+}
 
-      <section className="rounded-md border border-[var(--color-border)] bg-[var(--color-pane)] p-6">
-        <h2 className="text-lg font-semibold text-[var(--color-accent)]">Welcome</h2>
-        <p className="mt-2 text-sm text-[var(--color-text-muted)]">
-          The scan history list, finding detail view, and diff between runs live in subsequent
-          feature drops. This page is the protected entry point and confirms session, MongoDB
-          connectivity, and middleware routing are all green.
-        </p>
-      </section>
+function parseIntOr(raw: string | undefined): number {
+  if (!raw) return Number.NaN;
+  return Number.parseInt(raw, 10);
+}
 
-      <form action={logoutAction}>
-        <button
-          type="submit"
-          data-testid="logout-button"
-          className="rounded-md border border-[var(--color-border)] bg-[var(--color-pane)] px-4 py-2 text-sm text-[var(--color-text)] hover:border-[var(--color-accent-warm)] hover:text-[var(--color-accent-warm)]"
-        >
-          Sign out
-        </button>
-      </form>
-    </main>
-  );
+function clamp(value: number, min: number, max: number, fallback: number): number {
+  if (!Number.isFinite(value)) return fallback;
+  if (value < min) return min;
+  if (value > max) return max;
+  return value;
 }

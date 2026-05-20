@@ -13,7 +13,7 @@
  * No external services required. Designed to be invoked through
  * `yarn workspace @audithex/web run cypress:e2e`.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -62,6 +62,22 @@ async function main() {
   const passwordHash = await persistence.hashPassword(PASSWORD);
   await persistence.createUser(conn, { email: EMAIL, passwordHash });
   await persistence.disconnectAll();
+
+  console.log('[orchestrator] seeding banking-bot scan via the CLI…');
+  const cliBin = resolve(repoRoot, 'apps', 'cli', 'bin', 'audithex.js');
+  const fixture = resolve(repoRoot, 'fixtures', 'fixture-banking-bot');
+  const cliResult = spawnSync('node', [cliBin, 'scan', fixture, '--report', 'json'], {
+    env: { ...process.env, MONGODB_URI: uri },
+    encoding: 'utf8',
+  });
+  // The CLI exits 2 on a fixture full of critical findings — that is
+  // the expected outcome; only fail if the persistence message is
+  // missing from stdout.
+  if (!cliResult.stdout.includes('Saved scan run')) {
+    throw new Error(
+      `audithex scan did not persist (exit=${cliResult.status}): ${cliResult.stderr || cliResult.stdout}`,
+    );
+  }
 
   const nextBin = locateBin('next');
   if (!nextBin) throw new Error('next binary not found in apps/web or repo-root node_modules');

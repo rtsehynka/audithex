@@ -2,10 +2,11 @@
 /**
  * Captures a fixed set of Puppeteer screenshots of the local web UI
  * into ~/Desktop/audithex-u2-<YYYY-MM-DD>/. Boots an isolated stack
- * (in-memory MongoDB + seeded user + `next start`) so the run is
- * fully self-contained.
+ * (in-memory MongoDB + seeded user + one banking-bot scan persisted
+ * through the CLI + `next start`) so the run is fully self-contained
+ * and the history list / detail page are never empty.
  */
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { dirname, resolve } from 'node:path';
@@ -85,6 +86,21 @@ async function main() {
   });
   await persistence.disconnectAll();
 
+  console.log('[screenshots] seeding banking-bot scan via the CLI…');
+  const cliBin = resolve(repoRoot, 'apps', 'cli', 'bin', 'audithex.js');
+  const fixture = resolve(repoRoot, 'fixtures', 'fixture-banking-bot');
+  const cliResult = spawnSync('node', [cliBin, 'scan', fixture, '--report', 'json'], {
+    env: { ...process.env, MONGODB_URI: uri },
+    encoding: 'utf8',
+  });
+  if (!cliResult.stdout.includes('Saved scan run')) {
+    throw new Error(
+      `audithex scan did not persist (exit=${cliResult.status}): ${cliResult.stderr || cliResult.stdout}`,
+    );
+  }
+  const seededId = cliResult.stdout.match(/Saved scan run ([a-f0-9]{24})/)?.[1];
+  if (!seededId) throw new Error('could not parse seeded scan id from CLI output');
+
   const nextBin = locateBin('next');
   if (!nextBin) throw new Error('next binary not found');
   if (!existsSync(resolve(webDir, '.next'))) {
@@ -120,7 +136,7 @@ async function main() {
   });
   addCleanup('browser', () => browser.close());
   const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 800, deviceScaleFactor: 2 });
+  await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 2 });
 
   console.log('[screenshots] /login (cold)…');
   await page.goto(`http://localhost:${PORT}/login`, { waitUntil: 'load' });
@@ -140,7 +156,7 @@ async function main() {
   ]);
   await page.screenshot({ path: resolve(outDir, '02-login-error.png'), fullPage: false });
 
-  console.log('[screenshots] valid credentials → /…');
+  console.log('[screenshots] sign in → / (history list)…');
   await page.goto(`http://localhost:${PORT}/login`, { waitUntil: 'load' });
   await page.type('[data-testid=login-email]', EMAIL);
   await page.type('[data-testid=login-password]', PASSWORD);
@@ -148,16 +164,23 @@ async function main() {
     page.click('[data-testid=login-submit]'),
     page.waitForNavigation({ waitUntil: 'load', timeout: 15_000 }),
   ]);
-  await page.screenshot({ path: resolve(outDir, '03-home-after-login.png'), fullPage: false });
+  await page.waitForSelector('[data-testid=scan-table]', { timeout: 10_000 });
+  await page.screenshot({ path: resolve(outDir, '03-scan-history.png'), fullPage: true });
+
+  console.log(`[screenshots] /scans/${seededId} (detail)…`);
+  await page.goto(`http://localhost:${PORT}/scans/${seededId}`, { waitUntil: 'load' });
+  await page.waitForSelector('[data-testid=scan-title]', { timeout: 10_000 });
+  await page.screenshot({ path: resolve(outDir, '04-scan-detail.png'), fullPage: true });
 
   console.log('[screenshots] sign out → /login…');
+  await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
   await Promise.all([
     page.click('[data-testid=logout-button]'),
     page.waitForNavigation({ waitUntil: 'load', timeout: 15_000 }),
   ]);
-  await page.screenshot({ path: resolve(outDir, '04-login-after-logout.png'), fullPage: false });
+  await page.screenshot({ path: resolve(outDir, '05-login-after-logout.png'), fullPage: false });
 
-  console.log(`[screenshots] saved 4 PNGs to ${outDir}`);
+  console.log(`[screenshots] saved 5 PNGs to ${outDir}`);
   await cleanup(0);
 }
 

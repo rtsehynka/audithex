@@ -252,7 +252,12 @@ node apps/cli/bin/audithex.js ui --dev --no-open        # dev server, do not ope
 node apps/cli/bin/audithex.js ui --port 8080            # change the port
 ```
 
-The UI redirects unauthenticated visitors to `/login`; signing in lands them on `/` (the scan history landing page). `Sign out` clears the cookie and returns to `/login`.
+The UI redirects unauthenticated visitors to `/login`; signing in lands them on `/`. `Sign out` clears the cookie and returns to `/login`.
+
+The dashboard surfaces two routes today:
+
+- **`/`** — Mongo-backed scan history table. Columns are id (clickable, ObjectId), `scannedAt` (UTC), top severity badge, severity counts (`C/H/M/L`), rules-pack version, elapsed time, and project root. Pagination via `?skip=…&limit=…` (default 25, max 100). Empty state explains how to seed scans by running `audithex scan` with `MONGODB_URI` set.
+- **`/scans/[id]`** — full detail of one scan run: metadata grid (project root, rules pack, audithex version, elapsed time, discovery summary, fingerprint), then findings grouped by severity (`critical` → `high` → `medium` → `low`). Unknown ids 404.
 
 The UI runs entirely on `localhost` — no traffic leaves your machine. Cypress covers the login flow end-to-end:
 
@@ -395,7 +400,7 @@ Test count by workspace:
 | `@audithex/core-update` | 13 |
 | `@audithex/core-persistence` | 11 (in-memory MongoDB via `mongodb-memory-server`) |
 | `@audithex/cli` | 15 (incl. banking-bot selftest, exit-code coverage, end-to-end Mongo-backed `history`) |
-| `@audithex/web` (Cypress) | 3 end-to-end specs (`/login` redirect, invalid-creds error, sign-in + sign-out round-trip) |
+| `@audithex/web` (Cypress) | 6 end-to-end specs (login: redirect, invalid-creds, sign-in/sign-out; history: list render, list → detail navigation, unknown-id 404) |
 | `@audithex/core-i18n` | 7 |
 | `@audithex/core-report` | 3 |
 | `@audithex/core-eval-runner` | 3 |
