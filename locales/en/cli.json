@@ -17,6 +17,9 @@
     "selftest": {
       "summary": "Run self-evaluating tests against bundled fixtures"
     },
+    "history": {
+      "summary": "List or inspect scan runs persisted in MongoDB"
+    },
     "init": {
       "summary": "Create .audithex/config.json in the current project"
     },

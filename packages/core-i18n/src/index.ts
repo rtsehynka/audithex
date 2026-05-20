@@ -7,7 +7,7 @@ import i18next, { type Resource, type i18n } from 'i18next';
 export const SUPPORTED_LOCALES: readonly Locale[] = ['en', 'uk'] as const;
 export const DEFAULT_LOCALE: Locale = 'en';
 
-const NAMESPACES = ['common', 'cli', 'scan', 'findings', 'update', 'selftest'] as const;
+const NAMESPACES = ['common', 'cli', 'scan', 'findings', 'update', 'selftest', 'history'] as const;
 export type Namespace = (typeof NAMESPACES)[number];
 
 function resolveLocalesRoot(): string {

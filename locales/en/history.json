@@ -1,0 +1,14 @@
+{
+  "mongoMissing": "MONGODB_URI is not configured. Set it in .env before running `audithex history`.",
+  "connectFailed": "Could not connect to MongoDB: {{error}}",
+  "empty": "No scan runs found.",
+  "header": "Found {{total}} scan run(s):",
+  "notFound": "No scan run with id {{id}}.",
+  "flags": {
+    "limit": "Maximum number of rows to print (default: 20)",
+    "skip": "Number of rows to skip — use for paging (default: 0)",
+    "rootPath": "Only show scans whose rootPath matches this value exactly",
+    "show": "Print the full record for one scan run by its id",
+    "json": "Emit JSON instead of the table"
+  }
+}

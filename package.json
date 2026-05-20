@@ -22,7 +22,12 @@
     "locales:check": "node scripts/check-locale-parity.mjs",
     "stubs:check": "node scripts/check-no-stubs.mjs",
     "verify": "yarn lint && yarn typecheck && yarn test && yarn dupes && yarn docs:check && yarn locales:check && yarn stubs:check",
-    "cli": "yarn workspace @audithex/cli exec audithex"
+    "cli": "yarn workspace @audithex/cli exec audithex",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f",
+    "infra:status": "docker compose ps",
+    "infra:nuke": "docker compose down -v"
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",

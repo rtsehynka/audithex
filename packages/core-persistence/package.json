@@ -1,0 +1,30 @@
+{
+  "name": "@audithex/core-persistence",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run --passWithNoTests --dir ./src"
+  },
+  "dependencies": {
+    "@audithex/core-types": "workspace:*",
+    "bcryptjs": "2.4.3",
+    "mongoose": "8.9.5"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "2.4.6",
+    "mongodb-memory-server": "10.1.4",
+    "typescript": "5.7.2"
+  }
+}

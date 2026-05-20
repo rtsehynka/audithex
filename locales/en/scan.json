@@ -18,5 +18,7 @@
     "classify": "Classifying files"
   },
   "noFindings": "No findings — your project looks clean.",
-  "completed": "Scan complete."
+  "completed": "Scan complete.",
+  "persisted": "Saved scan run {{id}} for {{rootPath}} to MongoDB.",
+  "persistFailed": "Could not persist scan to MongoDB: {{error}}"
 }

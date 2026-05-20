@@ -17,6 +17,9 @@
     "selftest": {
       "summary": "Виконати самотестування на bundled fixtures"
     },
+    "history": {
+      "summary": "Переглянути або відкрити збережені у MongoDB історичні скани"
+    },
     "init": {
       "summary": "Створити .audithex/config.json у поточному проєкті"
     },

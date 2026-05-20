@@ -1,7 +1,7 @@
-import { join } from 'node:path';
-import { resolve } from 'node:path';
+import { join, resolve } from 'node:path';
 import { discover } from '@audithex/core-discovery';
 import { t } from '@audithex/core-i18n';
+import { connectMongo, saveScanRun } from '@audithex/core-persistence';
 import { type ReportFormat, renderReport } from '@audithex/core-report';
 import { loadRulesPack, runRules } from '@audithex/core-rules';
 import { type ScanResult, exitCodeFromFindings } from '@audithex/core-types';
@@ -13,7 +13,6 @@ import { AUDITHEX_VERSION } from '../index.js';
 const VALID_REPORTS = new Set<ReportFormat>(['console', 'json', 'md']);
 
 export function registerScanCommand(program: Command, env: AudithexEnv): void {
-  void env;
   program
     .command('scan')
     .description(t('cli:commands.scan.summary'))
@@ -51,6 +50,23 @@ export function registerScanCommand(program: Command, env: AudithexEnv): void {
       if (!options.ci || format !== 'console') {
         process.stdout.write(`${output}\n`);
       }
+
+      if (env.MONGODB_URI) {
+        try {
+          const conn = await connectMongo(env.MONGODB_URI, { silent: true });
+          const saved = await saveScanRun(conn, { scan: result });
+          process.stdout.write(
+            `${t('scan:persisted', {
+              id: String(saved._id),
+              rootPath: result.rootPath,
+            })}\n`,
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          process.stderr.write(`${t('scan:persistFailed', { error: message })}\n`);
+        }
+      }
+
       process.exitCode = exitCodeFromFindings(findings);
     });
 }

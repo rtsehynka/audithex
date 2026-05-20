@@ -1,56 +1,16 @@
-import { type ExecFileSyncOptions, execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { locateFixturesRoot, runCli } from '../test-helpers/cli-runner.js';
 
 /**
- * End-to-end exit-code coverage for the CLI. Spawns the built binary
- * with execFileSync so we exercise the same process boundary CI users
- * see. Each case asserts the documented contract:
+ * End-to-end exit-code coverage. Each case asserts the documented
+ * contract:
  *   0 — no findings
- *   1 — only low / medium findings  (no fixture path covers this yet)
- *   2 — at least one high / critical finding, OR a CLI / environment error
+ *   1 — only low / medium findings  (no fixture covers this yet)
+ *   2 — at least one high / critical finding, OR a CLI / env error
  */
-
-function locateCliEntry(): string {
-  const here = dirname(fileURLToPath(import.meta.url));
-  // src/commands/ -> src/ -> cli/ -> apps/ -> repo root
-  const repoRoot = resolve(here, '..', '..', '..', '..');
-  return join(repoRoot, 'apps', 'cli', 'bin', 'audithex.js');
-}
-
-function locateFixturesRoot(): string {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const repoRoot = resolve(here, '..', '..', '..', '..');
-  return join(repoRoot, 'fixtures');
-}
-
-interface RunResult {
-  status: number;
-  stdout: string;
-  stderr: string;
-}
-
-function runCli(args: readonly string[], cwd?: string): RunResult {
-  const opts: ExecFileSyncOptions = {
-    encoding: 'utf8',
-    stdio: ['ignore', 'pipe', 'pipe'],
-  };
-  if (cwd) opts.cwd = cwd;
-  try {
-    const stdout = execFileSync('node', [locateCliEntry(), ...args], opts);
-    return { status: 0, stdout: String(stdout), stderr: '' };
-  } catch (err) {
-    const e = err as { status?: number; stdout?: Buffer | string; stderr?: Buffer | string };
-    return {
-      status: typeof e.status === 'number' ? e.status : 1,
-      stdout: e.stdout ? String(e.stdout) : '',
-      stderr: e.stderr ? String(e.stderr) : '',
-    };
-  }
-}
 
 describe('CLI exit codes', () => {
   let cleanProject: string;

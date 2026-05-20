@@ -10,7 +10,8 @@ The scanner is polyglot. It ships native TypeScript Compiler API parsers for `.t
 
 ## What you get out of the box
 
-- **CLI commands:** `scan`, `update`, `selftest`, `init`, `version`
+- **CLI commands:** `scan`, `update`, `selftest`, `history`, `init`, `version`
+- **Optional MongoDB persistence** — point `MONGODB_URI` at any Mongo and every scan is saved to the `scan_runs` collection for review through `audithex history`. The CLI runs fully without MongoDB; persistence is purely opt-in.
 - **10 rules (R001 – R010)** covering OWASP LLM02, LLM06, LLM07, LLM08, mapped to CWE-22, 78, 79, 89, 94, 798, 918
 - **20 secret patterns** for OpenAI, Anthropic, Google, Cohere, Mistral, Hugging Face, Replicate, GitHub, GitLab, Slack, Discord, AWS, Stripe, Twilio, SendGrid
 - **3 rule engines:** `regex-in-code`, `regex-in-prompt`, `artifact-property`
@@ -87,6 +88,7 @@ Variables Audithex understands:
 | `AUDITHEX_HOME` | Root for cached rules-pack, selftest history, etc. | `~/.audithex` |
 | `AUDITHEX_LOCALES_ROOT` | Absolute path to the locales directory (packaged builds only) | walked up from the package's install location |
 | `AUDITHEX_RULES_PACK_URL` | Git URL the `update` command clones / pulls from | `https://github.com/audithex/rules-pack.git` |
+| `MONGODB_URI` | Connection string for the optional persistence layer. Required for `audithex history`; transparent for `audithex scan`. Must start with `mongodb://` or `mongodb+srv://`. | unset (persistence disabled) |
 
 Audithex **never** sends data to a third party. The two LLM keys above are used only when you explicitly run an LLM-using action; the request then goes straight from your machine to the provider you chose.
 
@@ -175,6 +177,56 @@ Setting `AUDITHEX_AUTO_UPDATE_CHECK=false` disables the daily silent HEAD probe 
 
 ---
 
+## Bring up the local infrastructure
+
+A single `docker-compose.yml` at the repo root provisions everything `audithex` needs locally — currently just one MongoDB service. The shape is the same in CI, on a workstation, and on a server.
+
+```bash
+# Start MongoDB on localhost:27017 (named volume keeps data across restarts)
+yarn infra:up
+# Equivalent: docker compose up -d
+
+yarn infra:status         # docker compose ps
+yarn infra:logs           # docker compose logs -f
+yarn infra:down           # stop the container, keep the volume
+yarn infra:nuke           # stop + drop the volume (wipes scan history)
+```
+
+After `yarn infra:up`, copy `.env.example` to `.env` (the `MONGODB_URI=mongodb://localhost:27017/audithex` line already matches the compose file) and every `audithex scan` will persist. The compose file accepts `AUDITHEX_MONGO_PORT` if `27017` is taken on your host.
+
+---
+
+## Persist scans to MongoDB
+
+Set `MONGODB_URI` in `.env` (or export it for one invocation) and every `scan` quietly saves the full result to the `scan_runs` collection. Nothing else about the scan changes — the report still prints to stdout, the exit code still mirrors severity, and the value of `MONGODB_URI` is the only opt-in.
+
+```bash
+# Local Mongo (use yarn infra:up or the line below)
+yarn infra:up
+export MONGODB_URI=mongodb://localhost:27017/audithex
+
+# Run a scan — it now persists. The new ScanRun id is printed at the end.
+node apps/cli/bin/audithex.js scan .
+
+# List every persisted scan (newest first)
+node apps/cli/bin/audithex.js history
+
+# Same data as JSON for piping into jq / scripts
+node apps/cli/bin/audithex.js history --json
+
+# Open one scan in full
+node apps/cli/bin/audithex.js history --show <scan-run-id>
+
+# Pagination + rootPath filter
+node apps/cli/bin/audithex.js history --limit 50 --skip 100 --root-path /Users/you/work/my-agent
+```
+
+`history` exits `2` if `MONGODB_URI` is missing or the connection fails, and `0` otherwise. The schema (`ScanRun`, `User`, `RulesPackUpdate`) is defined in `packages/core-persistence/src/models/` — Mongoose-native, so the same documents power the local web UI when it ships.
+
+If a scan runs while Mongo is unreachable, it logs `Could not persist scan to MongoDB: ...` to stderr and proceeds with the normal exit code. Persistence never blocks the scan.
+
+---
+
 ## Run the self-evaluating engine
 
 `selftest` runs the full pipeline against the bundled `fixtures/fixture-banking-bot/` (intentionally-vulnerable banking chatbot) and asserts the result against `expected-findings.json` (10 ground-truth findings, one per rule R001 – R010).
@@ -257,6 +309,8 @@ audithex/
 │   ├── core-rules             JSON rules-pack engine + loader + 3 engines
 │   ├── core-report            Console / JSON / Markdown report renderers
 │   ├── core-update            Git-based rules-pack update channel + selftest rollback
+│   ├── core-persistence       MongoDB + Mongoose schemas (ScanRun, User, RulesPackUpdate),
+│   │                          bcryptjs auth helpers, in-memory test harness
 │   ├── core-eval-runner       Fixture evaluator + bundled-fixtures loader (precision / recall thresholds)
 │   ├── core-payloads          Schema and loader for the attack payload library
 │   ├── core-i18n              i18next loader auto-resolving locales/ root, namespace-aware t()
@@ -293,7 +347,8 @@ Test count by workspace:
 | `@audithex/core-discovery` | 35 (+ 1 perf benchmark gated by `AUDITHEX_RUN_PERF_BENCH=true`) |
 | `@audithex/core-rules` | 15 |
 | `@audithex/core-update` | 13 |
-| `@audithex/cli` | 5 (incl. end-to-end banking-bot selftest) |
+| `@audithex/core-persistence` | 11 (in-memory MongoDB via `mongodb-memory-server`) |
+| `@audithex/cli` | 15 (incl. banking-bot selftest, exit-code coverage, end-to-end Mongo-backed `history`) |
 | `@audithex/core-i18n` | 7 |
 | `@audithex/core-report` | 3 |
 | `@audithex/core-eval-runner` | 3 |

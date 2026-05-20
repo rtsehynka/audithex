@@ -24,6 +24,17 @@ const schema = z.object({
   AUDITHEX_HOME: z.string().optional(),
   AUDITHEX_LOCALES_ROOT: z.string().optional(),
   AUDITHEX_RULES_PACK_URL: z.string().url().optional(),
+  MONGODB_URI: z.preprocess(
+    (v) => (typeof v === 'string' && v.length === 0 ? undefined : v),
+    z
+      .string()
+      .min(1)
+      .optional()
+      .refine(
+        (v) => v === undefined || v.startsWith('mongodb://') || v.startsWith('mongodb+srv://'),
+        { message: 'MONGODB_URI must start with mongodb:// or mongodb+srv://' },
+      ),
+  ),
 });
 
 export type AudithexEnv = z.infer<typeof schema>;
