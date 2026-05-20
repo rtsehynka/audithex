@@ -9,7 +9,6 @@
     { "path": "./packages/core-payloads" },
     { "path": "./packages/core-eval-runner" },
     { "path": "./packages/core-report" },
-    { "path": "./packages/core-update" },
-    { "path": "./packages/core-db" }
+    { "path": "./packages/core-update" }
   ]
 }

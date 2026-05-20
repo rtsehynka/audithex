@@ -14,6 +14,9 @@ export type OwaspLLMCategory =
 
 export type Locale = 'en' | 'uk';
 
+// Artifact taxonomy.
+// `detail` shape conventions per kind are documented in the discovery
+// extractor that emits them. Intentionally loose to keep things lightweight.
 export type ArtifactKind =
   | 'sdk-import'
   | 'model-string'
@@ -51,6 +54,7 @@ export interface DiscoveryResult {
   rootPath: string;
   scannedAt: string;
   summary: DiscoverySummary;
+  files: string[];
   artifacts: DiscoveryArtifact[];
 }
 

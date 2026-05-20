@@ -1,8 +1,10 @@
 # Audithex
 
-Read-only AI security audit for your Node and TypeScript code. Local-first. Maps every finding to the OWASP LLM Top 10.
+Read-only, local-first AI security audit for any LLM-using codebase. Maps every finding to the OWASP LLM Top 10.
 
-> Status: pre-alpha, week 1 of the Phase 1 roadmap. The repository is a monorepo skeleton with real (non-stub) implementations of the scanner core and the CLI surface.
+Audithex is polyglot by design. Out of the box it ships native parsers for TypeScript/JavaScript and regex-based detectors that work across Python, PHP, Go, Java, Ruby and any other source language. An optional AI-fallback mode uses your own LLM API key to extract artifacts from files we don't yet parse natively. The set of scanned extensions and directories is configurable via environment variables and `.audithex/config.json`; in Phase 2 the same configuration is exposed in the local web UI.
+
+> Status: pre-alpha, week 1 of the Phase 1 roadmap. The repository is a monorepo skeleton with real (non-stub) implementations of the scanner core and the CLI surface. Native TS/JS extractors land in week 2; Python and PHP detectors plus the AI-fallback shim land alongside them.
 
 ## Quickstart
 
@@ -27,7 +29,6 @@ node apps/cli/bin/audithex.js scan .
 - `packages/core-eval-runner` — fixture evaluator that drives the self-test command.
 - `packages/core-report` — console, JSON, and Markdown report renderers.
 - `packages/core-update` — local rules-pack manifest reader plus semver comparison.
-- `packages/core-db` — SQLite wrapper for self-test and update history.
 - `packages/core-i18n` — `i18next` setup that loads `locales/en` and `locales/uk`.
 - `packages/core-types` — shared TypeScript types and the exit-code mapper.
 - `locales/{en,uk}` — UI strings, kept in parity by `scripts/check-locale-parity.mjs`.
