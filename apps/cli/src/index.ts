@@ -37,9 +37,11 @@ export async function main(argv: readonly string[]): Promise<number> {
   program.exitOverride();
   try {
     await program.parseAsync([...argv], { from: 'user' });
-    const opts = program.opts<{ __exitCode?: number }>();
-    if (typeof opts.__exitCode === 'number') {
-      exitCode = opts.__exitCode;
+    // Commands signal their result by setting process.exitCode. Any
+    // non-zero value (set by scan / update / selftest) wins over the
+    // default success.
+    if (typeof process.exitCode === 'number' && process.exitCode !== 0) {
+      exitCode = process.exitCode;
     }
   } catch (error) {
     // commander's exitOverride throws CommanderError on --help / --version / invalid usage.

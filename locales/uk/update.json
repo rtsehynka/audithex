@@ -1,18 +1,13 @@
 {
-  "checking": "Перевірка оновлень",
-  "fetching": "Завантаження маніфесту rules-pack з {{url}}…",
-  "currentVersion": "Поточний rules-pack: {{version}}",
-  "latestVersion": "Останній rules-pack: {{version}}",
-  "alreadyLatest": "У вас уже найновіший rules pack.",
-  "available": "Доступне оновлення: {{from}} → {{to}}",
+  "checking": "Перевірка каналу rules-pack {{url}}…",
+  "currentVersion": "Поточний rules-pack: {{version}} (коміт {{commit}})",
+  "noCommit": "ще не склоновано",
+  "alreadyLatest": "У вас уже найновіший rules pack (коміт {{commit}}).",
   "applyPrompt": "Застосувати оновлення?",
   "applyDeclined": "Оновлення відхилено; rules pack залишається на {{version}}.",
-  "installed": "Rules pack {{from}} → {{to}} встановлено. Виконайте `audithex scan` щоб задіяти.",
-  "pruned": "Видалено {{count}} історичних версій rules pack.",
-  "fetchFailed": "Не вдалося завантажити rules pack: {{error}}",
-  "checksumMismatch": "Rules pack має невідповідний sha256 (очікувалось {{expected}}, отримано {{actual}}). Відмова встановлювати.",
-  "invalidPayload": "Завантажений rules pack пошкоджено: {{reason}}",
-  "selftestFailed": "Selftest впав на rules pack {{version}}; залишаємось на {{previous}}.",
+  "installed": "Rules pack {{from}} → {{to}} ({{version}}) встановлено. Виконайте `audithex scan` щоб задіяти.",
+  "fetchFailed": "Не вдалося отримати rules pack: {{error}}",
+  "selftestFailed": "Selftest впав на коміті {{attempted}}; повернуто на {{previous}}.",
   "flags": {
     "yes": "Пропустити підтвердження встановлення"
   }

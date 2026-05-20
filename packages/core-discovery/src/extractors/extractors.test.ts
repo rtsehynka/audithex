@@ -22,30 +22,57 @@ function inputFor(relPath: string, content: string): ExtractorInput {
 }
 
 describe('sdk-imports extractor', () => {
-  it('finds Anthropic in TypeScript imports', () => {
+  it('finds Anthropic in TypeScript imports via AST', () => {
     const out = sdkImportsExtractor.extract(
       inputFor('src/agent.ts', "import Anthropic from '@anthropic-ai/sdk';\n"),
     );
     expect(out).toHaveLength(1);
-    expect(out[0]?.detail).toMatchObject({ provider: 'anthropic', language: 'typescript' });
+    expect(out[0]?.confidence).toBe('ast');
+    expect(out[0]?.detail).toMatchObject({
+      provider: 'anthropic',
+      language: 'typescript',
+      syntax: 'import',
+    });
   });
 
-  it('finds OpenAI in Python imports', () => {
+  it('finds OpenAI via require() in JavaScript via AST', () => {
+    const out = sdkImportsExtractor.extract(
+      inputFor('agent.js', "const OpenAI = require('openai');\n"),
+    );
+    expect(out).toHaveLength(1);
+    expect(out[0]?.confidence).toBe('ast');
+    expect(out[0]?.detail).toMatchObject({
+      provider: 'openai',
+      language: 'javascript',
+      syntax: 'require',
+    });
+  });
+
+  it('finds OpenAI in Python imports via regex', () => {
     const out = sdkImportsExtractor.extract(inputFor('agent.py', 'from openai import OpenAI\n'));
     expect(out).toHaveLength(1);
+    expect(out[0]?.confidence).toBe('regex');
     expect(out[0]?.detail).toMatchObject({ provider: 'openai', language: 'python' });
   });
 
-  it('finds Anthropic in PHP imports', () => {
+  it('finds Anthropic in PHP imports via regex', () => {
     const out = sdkImportsExtractor.extract(
       inputFor('Client.php', '<?php\nuse Anthropic\\Client;\n'),
     );
     expect(out).toHaveLength(1);
+    expect(out[0]?.confidence).toBe('regex');
     expect(out[0]?.detail).toMatchObject({ provider: 'anthropic', language: 'php' });
   });
 
   it('returns no artifacts when no SDK imports present', () => {
     const out = sdkImportsExtractor.extract(inputFor('src/util.ts', 'export const x = 1;\n'));
+    expect(out).toHaveLength(0);
+  });
+
+  it('ignores SDK names that only appear in a string literal (AST is structural)', () => {
+    const out = sdkImportsExtractor.extract(
+      inputFor('src/agent.ts', 'const note = "we use @anthropic-ai/sdk for chat";\n'),
+    );
     expect(out).toHaveLength(0);
   });
 });
@@ -197,7 +224,55 @@ describe('system-prompts extractor', () => {
 });
 
 describe('tool-definitions extractor', () => {
-  it('finds an OpenAI-shaped tool definition in JSON', () => {
+  it('finds an OpenAI-shaped tool literal in TypeScript via AST', () => {
+    const code = `
+      const tools = [
+        {
+          type: 'function',
+          function: {
+            name: 'lookup_account',
+            description: 'Fetch a customer account by id',
+          },
+        },
+      ];
+    `;
+    const out = toolDefinitionsExtractor.extract(inputFor('src/agent.ts', code));
+    const openai = out.find((a) => a.detail.framework === 'openai');
+    expect(openai).toBeDefined();
+    expect(openai?.confidence).toBe('ast');
+    expect(openai?.detail).toMatchObject({
+      toolName: 'lookup_account',
+      hasDescription: true,
+      hasSchema: false,
+      language: 'typescript',
+    });
+  });
+
+  it('finds an Anthropic-shaped tool literal in TypeScript via AST', () => {
+    const code = `
+      const tools = [
+        {
+          name: 'transfer_funds',
+          input_schema: {
+            type: 'object',
+            properties: { from: { type: 'string' } },
+          },
+        },
+      ];
+    `;
+    const out = toolDefinitionsExtractor.extract(inputFor('src/agent.ts', code));
+    const anthropic = out.find((a) => a.detail.framework === 'anthropic');
+    expect(anthropic).toBeDefined();
+    expect(anthropic?.confidence).toBe('ast');
+    expect(anthropic?.detail).toMatchObject({
+      toolName: 'transfer_funds',
+      hasDescription: false,
+      hasSchema: true,
+      language: 'typescript',
+    });
+  });
+
+  it('finds an OpenAI-shaped tool definition in JSON via regex', () => {
     const content = JSON.stringify(
       {
         tools: [
@@ -216,6 +291,7 @@ describe('tool-definitions extractor', () => {
     );
     const out = toolDefinitionsExtractor.extract(inputFor('tools.json', content));
     expect(out.length).toBeGreaterThanOrEqual(1);
+    expect(out[0]?.confidence).toBe('regex');
     expect(out[0]?.detail).toMatchObject({
       framework: 'openai',
       toolName: 'lookup_account',
@@ -224,7 +300,7 @@ describe('tool-definitions extractor', () => {
     });
   });
 
-  it('finds an Anthropic-shaped tool', () => {
+  it('finds an Anthropic-shaped tool in JSON via regex', () => {
     const content = JSON.stringify(
       [
         {

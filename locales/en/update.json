@@ -1,18 +1,13 @@
 {
-  "checking": "Checking for updates",
-  "fetching": "Fetching rules-pack manifest from {{url}}…",
-  "currentVersion": "Current rules-pack: {{version}}",
-  "latestVersion": "Latest rules-pack: {{version}}",
-  "alreadyLatest": "Already on the latest rules pack.",
-  "available": "Update available: {{from}} → {{to}}",
+  "checking": "Checking rules-pack channel {{url}}…",
+  "currentVersion": "Current rules-pack: {{version}} (commit {{commit}})",
+  "noCommit": "no clone yet",
+  "alreadyLatest": "Already on the latest rules pack (commit {{commit}}).",
   "applyPrompt": "Apply this update?",
   "applyDeclined": "Update declined; leaving rules pack at {{version}}.",
-  "installed": "Rules pack {{from}} → {{to}} installed. Run `audithex scan` to use it.",
-  "pruned": "Pruned {{count}} historical pack version(s).",
+  "installed": "Rules pack {{from}} → {{to}} ({{version}}) installed. Run `audithex scan` to use it.",
   "fetchFailed": "Failed to fetch rules pack: {{error}}",
-  "checksumMismatch": "Rules pack checksum mismatch (expected {{expected}}, got {{actual}}). Refusing to install.",
-  "invalidPayload": "Downloaded rules pack is malformed: {{reason}}",
-  "selftestFailed": "Selftest failed on rules pack {{version}}; staying on {{previous}}.",
+  "selftestFailed": "Selftest failed on commit {{attempted}}; rolled back to {{previous}}.",
   "flags": {
     "yes": "Skip the apply-update confirmation prompt"
   }

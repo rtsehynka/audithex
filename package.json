@@ -1,6 +1,6 @@
 {
   "name": "audithex-monorepo",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "private": true,
   "description": "Local-first AI security audit tool for any LLM-using codebase.",
   "license": "AGPL-3.0-or-later",

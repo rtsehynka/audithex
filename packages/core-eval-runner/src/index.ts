@@ -1,5 +1,12 @@
 import type { Finding } from '@audithex/core-types';
 
+export {
+  bundledFixturesRoot,
+  listAvailableFixtures,
+  loadFixture,
+  type LoadedFixture,
+} from './fixture-loader.js';
+
 export interface ExpectedFinding {
   ruleId: string;
   file: string;

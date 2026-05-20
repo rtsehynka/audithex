@@ -1,0 +1,11 @@
+{
+  "pass": "PASS",
+  "fail": "FAIL",
+  "noFixtures": "No fixtures found under {{root}}. Add at least one fixture directory with expected-findings.json.",
+  "fixtureLine": "{{fixture}}: {{verdict}} (tp={{tp}} fp={{fp}} fn={{fn}} precision={{precision}} recall={{recall}})",
+  "summary": "selftest: {{verdict}} across {{count}} fixture(s) — thresholds precision>={{precision}}, recall>={{recall}}",
+  "flags": {
+    "fixtureRoot": "Override the directory under which fixtures are looked up",
+    "fixture": "Run only this fixture (by directory name)"
+  }
+}

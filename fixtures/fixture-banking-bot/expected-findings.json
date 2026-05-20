@@ -1,0 +1,67 @@
+{
+  "schemaVersion": "0.1",
+  "fixture": "fixture-banking-bot",
+  "expectedFindings": [
+    {
+      "ruleId": "R001",
+      "file": "src/agent.ts",
+      "line": 4,
+      "rationale": "Hardcoded OpenAI API key literal in source."
+    },
+    {
+      "ruleId": "R002",
+      "file": "prompts/banking-system.md",
+      "line": 1,
+      "rationale": "Hardcoded OpenAI API key embedded inside a standalone system prompt."
+    },
+    {
+      "ruleId": "R003",
+      "file": "tools/anthropic-tools.json",
+      "line": 4,
+      "rationale": "Anthropic-shaped tool 'transfer_funds' has no description field."
+    },
+    {
+      "ruleId": "R004",
+      "file": "tools/openai-tools.json",
+      "line": 4,
+      "rationale": "OpenAI-shaped tool 'lookup_account' has no parameters schema."
+    },
+    {
+      "ruleId": "R005",
+      "file": "src/agent.ts",
+      "line": 8,
+      "rationale": "eval() call on user-supplied payload."
+    },
+    {
+      "ruleId": "R006",
+      "file": "src/tools/database.ts",
+      "line": 11,
+      "rationale": "fs.writeFileSync with an interpolated path."
+    },
+    {
+      "ruleId": "R007",
+      "file": "src/agent.ts",
+      "line": 13,
+      "rationale": "child_process.execSync with an interpolated command string."
+    },
+    {
+      "ruleId": "R008",
+      "file": "src/tools/http.ts",
+      "line": 3,
+      "rationale": "fetch() with an interpolated URL — potential SSRF surface."
+    },
+    {
+      "ruleId": "R009",
+      "file": "src/tools/database.ts",
+      "line": 5,
+      "rationale": "SQL string built via concatenation with a user-controlled value."
+    },
+    {
+      "ruleId": "R010",
+      "file": "src/ui/render.ts",
+      "line": 3,
+      "rationale": "Direct .innerHTML assignment from an untrusted string."
+    }
+  ],
+  "notExpected": []
+}

@@ -52,4 +52,12 @@ export interface SdkImportPattern {
    * is treated as the imported symbol or module path for the artifact.
    */
   regex: RegExp;
+  /**
+   * Optional regex matched against a bare module specifier string
+   * (e.g. `@anthropic-ai/sdk`, not the surrounding `from '…'` syntax).
+   * Used by the TypeScript Compiler API extractor pass, which sees
+   * module paths directly. Languages whose preferredParser is `regex`
+   * leave this blank.
+   */
+  modulePattern?: RegExp;
 }

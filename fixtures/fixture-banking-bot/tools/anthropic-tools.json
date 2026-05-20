@@ -1,0 +1,15 @@
+{
+  "tools": [
+    {
+      "name": "transfer_funds",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "amount": { "type": "number" }
+        }
+      }
+    }
+  ]
+}

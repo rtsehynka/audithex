@@ -1,5 +1,6 @@
 import type { DiscoveryArtifact } from '@audithex/core-types';
 import ts from 'typescript';
+import { createTsSourceFile, lineColumnOf, literalText, propertyName, walk } from './ts-ast.js';
 import type { Extractor, ExtractorInput } from './types.js';
 import { offsetToLineColumn } from './utils.js';
 
@@ -70,22 +71,13 @@ function extractCodeEmbeddedRegex(input: ExtractorInput): DiscoveryArtifact[] {
 }
 
 function extractFromTsAst(input: ExtractorInput): DiscoveryArtifact[] {
-  const scriptKind = pickScriptKind(input.extension);
-  const source = ts.createSourceFile(
-    input.relPath,
-    input.content,
-    ts.ScriptTarget.Latest,
-    /* setParentNodes */ true,
-    scriptKind,
-  );
+  const source = createTsSourceFile(input);
   const out: DiscoveryArtifact[] = [];
-  const visit = (node: ts.Node): void => {
+  walk(source, (node) => {
     if (ts.isObjectLiteralExpression(node)) {
       collectFromObjectLiteral(node, source, input, out);
     }
-    ts.forEachChild(node, visit);
-  };
-  visit(source);
+  });
   return out;
 }
 
@@ -128,38 +120,8 @@ function pushAstHit(
   body: string,
   out: DiscoveryArtifact[],
 ): void {
-  const start = literal.getStart(source);
-  const { line: zeroLine, character } = ts.getLineAndCharacterOfPosition(source, start);
-  out.push(makeArtifact(input, body, zeroLine + 1, character + 1, 'ast'));
-}
-
-function propertyName(prop: ts.PropertyAssignment): string | null {
-  const name = prop.name;
-  if (ts.isIdentifier(name)) return name.text;
-  if (ts.isStringLiteral(name)) return name.text;
-  if (ts.isNoSubstitutionTemplateLiteral(name)) return name.text;
-  return null;
-}
-
-function literalText(node: ts.Node): string | null {
-  if (ts.isStringLiteral(node)) return node.text;
-  if (ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
-  return null;
-}
-
-function pickScriptKind(extension: string): ts.ScriptKind {
-  switch (extension) {
-    case '.tsx':
-      return ts.ScriptKind.TSX;
-    case '.jsx':
-      return ts.ScriptKind.JSX;
-    case '.js':
-    case '.mjs':
-    case '.cjs':
-      return ts.ScriptKind.JS;
-    default:
-      return ts.ScriptKind.TS;
-  }
+  const { line, column } = lineColumnOf(source, literal.getStart(source));
+  out.push(makeArtifact(input, body, line, column, 'ast'));
 }
 
 function makeArtifact(

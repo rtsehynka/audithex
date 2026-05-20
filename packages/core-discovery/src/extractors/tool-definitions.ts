@@ -1,33 +1,141 @@
 import type { DiscoveryArtifact } from '@audithex/core-types';
-import type { Extractor, ExtractorInput } from './types.js';
+import ts from 'typescript';
+import {
+  lineColumnOf,
+  literalText,
+  makeAstOrRegexExtractor,
+  propertyName,
+  walkTsSourceFile,
+} from './ts-ast.js';
+import type { ExtractorInput } from './types.js';
 import { offsetToLineColumn } from './utils.js';
 
 /**
  * Detects tool / function definitions in the two ecosystem-standard
- * shapes that show up across every language with an LLM SDK:
+ * shapes:
  *
- *   - OpenAI:    { "type": "function", "function": { "name": "...", ... } }
- *   - Anthropic: { "name": "...", "input_schema": {...} }
+ *   - OpenAI:    { type: 'function', function: { name: '…', description?: '…', parameters?: { properties?: … } } }
+ *   - Anthropic: { name: '…', description?: '…', input_schema: { properties?: … } }
  *
- * Once a name-anchored hit is found the extractor brace-balances
- * outward to find the enclosing object literal, then inspects ONLY
- * that body for sibling fields. Without that step the `hasDescription`
- * / `hasSchema` flags leak into adjacent siblings in arrays of tools.
+ * TS/JS files are parsed via the TypeScript Compiler API — object
+ * literals are walked and inspected by property name, so tool
+ * definitions written in code (not just JSON) are detected with
+ * `confidence: 'ast'`. Every other language (including JSON, the
+ * canonical home of tool manifests) keeps the existing regex pass
+ * with `confidence: 'regex'`.
  */
+export const toolDefinitionsExtractor = makeAstOrRegexExtractor(
+  'tool-definitions',
+  extractFromAst,
+  extractFromRegex,
+);
+
+function extractFromAst(input: ExtractorInput): DiscoveryArtifact[] {
+  return walkTsSourceFile(input, (node, source, push) => {
+    if (!ts.isObjectLiteralExpression(node)) return;
+    const tool = inspectObjectLiteral(node);
+    if (!tool) return;
+    const { line, column } = lineColumnOf(source, node.getStart(source));
+    push({
+      kind: 'tool-definition',
+      confidence: 'ast',
+      location: { file: input.relPath, line, column },
+      detail: {
+        toolName: tool.name,
+        framework: tool.framework,
+        hasDescription: tool.hasDescription,
+        hasSchema: tool.hasSchema,
+        language: input.language.id,
+      },
+    });
+  });
+}
+
+interface AstToolShape {
+  name: string;
+  framework: 'openai' | 'anthropic';
+  hasDescription: boolean;
+  hasSchema: boolean;
+}
+
+function inspectObjectLiteral(obj: ts.ObjectLiteralExpression): AstToolShape | null {
+  const props = collectKnownProperties(obj);
+  if (props.type === 'function' && props.functionBody) {
+    const inner = collectKnownProperties(props.functionBody);
+    if (!inner.name) return null;
+    const params = inner.parametersBody ?? null;
+    const hasSchema = params ? objectHasProperty(params, 'properties') : false;
+    return {
+      name: inner.name,
+      framework: 'openai',
+      hasDescription: typeof inner.description === 'string' && inner.description.length > 0,
+      hasSchema,
+    };
+  }
+  if (props.name && props.inputSchemaBody) {
+    return {
+      name: props.name,
+      framework: 'anthropic',
+      hasDescription: typeof props.description === 'string' && props.description.length > 0,
+      hasSchema: objectHasProperty(props.inputSchemaBody, 'properties'),
+    };
+  }
+  return null;
+}
+
+interface CollectedProps {
+  type?: string;
+  name?: string;
+  description?: string;
+  functionBody?: ts.ObjectLiteralExpression;
+  parametersBody?: ts.ObjectLiteralExpression;
+  inputSchemaBody?: ts.ObjectLiteralExpression;
+}
+
+function collectKnownProperties(obj: ts.ObjectLiteralExpression): CollectedProps {
+  const out: CollectedProps = {};
+  for (const prop of obj.properties) {
+    if (!ts.isPropertyAssignment(prop)) continue;
+    const key = propertyName(prop);
+    if (!key) continue;
+    if (key === 'type') {
+      const v = literalText(prop.initializer);
+      if (v !== null) out.type = v;
+    } else if (key === 'name') {
+      const v = literalText(prop.initializer);
+      if (v !== null) out.name = v;
+    } else if (key === 'description') {
+      const v = literalText(prop.initializer);
+      if (v !== null) out.description = v;
+    } else if (key === 'function' && ts.isObjectLiteralExpression(prop.initializer)) {
+      out.functionBody = prop.initializer;
+    } else if (key === 'parameters' && ts.isObjectLiteralExpression(prop.initializer)) {
+      out.parametersBody = prop.initializer;
+    } else if (key === 'input_schema' && ts.isObjectLiteralExpression(prop.initializer)) {
+      out.inputSchemaBody = prop.initializer;
+    }
+  }
+  return out;
+}
+
+function objectHasProperty(obj: ts.ObjectLiteralExpression, name: string): boolean {
+  for (const prop of obj.properties) {
+    if (!ts.isPropertyAssignment(prop)) continue;
+    if (propertyName(prop) === name) return true;
+  }
+  return false;
+}
 
 const OPENAI_TOOL =
   /"type"\s*:\s*"function"[\s\S]{0,40}?"function"\s*:\s*\{[\s\S]*?"name"\s*:\s*"([A-Za-z0-9_\-.]+)"/g;
 const ANTHROPIC_TOOL = /"name"\s*:\s*"([A-Za-z0-9_\-.]+)"[\s\S]{0,400}?"input_schema"\s*:/g;
 
-export const toolDefinitionsExtractor: Extractor = {
-  id: 'tool-definitions',
-  extract(input: ExtractorInput): DiscoveryArtifact[] {
-    const out: DiscoveryArtifact[] = [];
-    out.push(...findShape(input, OPENAI_TOOL, 'openai'));
-    out.push(...findShape(input, ANTHROPIC_TOOL, 'anthropic'));
-    return out;
-  },
-};
+function extractFromRegex(input: ExtractorInput): DiscoveryArtifact[] {
+  const out: DiscoveryArtifact[] = [];
+  out.push(...findShape(input, OPENAI_TOOL, 'openai'));
+  out.push(...findShape(input, ANTHROPIC_TOOL, 'anthropic'));
+  return out;
+}
 
 function findShape(
   input: ExtractorInput,
@@ -41,12 +149,9 @@ function findShape(
     const matchText = match[0];
     const toolName = match[1] ?? 'unknown';
 
-    // For OpenAI: anchor on the inner `function: {`, which is the tool
-    // body. For Anthropic: anchor on the enclosing `{` immediately
-    // before the `"name"` match.
     const anchor =
       framework === 'openai'
-        ? findInnerFunctionBrace(input.content, matchIndex, matchText)
+        ? findInnerFunctionBrace(matchIndex, matchText)
         : findPrecedingOpenBrace(input.content, matchIndex);
     if (anchor === -1) continue;
 
@@ -83,11 +188,7 @@ function findShape(
   return out;
 }
 
-/**
- * Find the `{` that opens the `function: { ... }` block inside the
- * match. Returns the index of that brace within `content`.
- */
-function findInnerFunctionBrace(_content: string, matchStart: number, matchText: string): number {
+function findInnerFunctionBrace(matchStart: number, matchText: string): number {
   const fnOffset = matchText.search(/"function"\s*:\s*\{/);
   if (fnOffset === -1) return -1;
   const slice = matchText.slice(fnOffset);
@@ -96,10 +197,6 @@ function findInnerFunctionBrace(_content: string, matchStart: number, matchText:
   return matchStart + fnOffset + braceOffset;
 }
 
-/**
- * Walk backwards from `from` (string-aware) to find the nearest `{`
- * that has no matching `}` yet — the start of the enclosing object.
- */
 function findPrecedingOpenBrace(content: string, from: number): number {
   let depth = 0;
   for (let i = from - 1; i >= 0; i -= 1) {
@@ -113,11 +210,6 @@ function findPrecedingOpenBrace(content: string, from: number): number {
   return -1;
 }
 
-/**
- * Forward brace-balance from a known `{` at `start`. String literals
- * are respected so braces inside `"foo}"` do not affect the count.
- * Returns the index of the matching `}`, or -1 if not found.
- */
 function findMatchingCloseBrace(content: string, start: number): number {
   let depth = 0;
   let inString = false;

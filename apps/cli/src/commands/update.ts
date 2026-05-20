@@ -2,11 +2,10 @@ import { discover } from '@audithex/core-discovery';
 import { t } from '@audithex/core-i18n';
 import { loadRulesPack, runRules } from '@audithex/core-rules';
 import {
-  DEFAULT_MANIFEST_URL,
+  DEFAULT_RULES_PACK_GIT_URL,
   audithexHome,
-  currentSymlinkPath,
-  httpFetcher,
-  readCurrentVersion,
+  currentPackPath,
+  readCurrentCommit,
   runUpdate,
 } from '@audithex/core-update';
 import { confirm, isCancel } from '@clack/prompts';
@@ -24,19 +23,24 @@ export function registerUpdateCommand(program: Command, env: AudithexEnv): void 
     .option('-y, --yes', t('update:flags.yes'))
     .action(async (options: UpdateCommandOptions) => {
       const home = audithexHome();
-      const userRulesPackDir = currentSymlinkPath(home);
-      const currentPack = loadRulesPack({ userRulesPackDir });
-      const currentVersion = currentPack.manifest.version;
-      const manifestUrl = env.AUDITHEX_RULES_PACK_URL ?? DEFAULT_MANIFEST_URL;
+      const rulesPackUrl = env.AUDITHEX_RULES_PACK_URL ?? DEFAULT_RULES_PACK_GIT_URL;
 
-      process.stdout.write(`${t('update:checking')}\n`);
-      process.stdout.write(`${t('update:fetching', { url: manifestUrl })}\n`);
-      process.stdout.write(`${t('update:currentVersion', { version: currentVersion })}\n`);
+      const currentPack = loadRulesPack({ userRulesPackDir: currentPackPath(home) });
+      const currentCommit = readCurrentCommit(home);
+      process.stdout.write(`${t('update:checking', { url: rulesPackUrl })}\n`);
+      process.stdout.write(
+        `${t('update:currentVersion', {
+          version: currentPack.manifest.version,
+          commit: currentCommit ?? t('update:noCommit'),
+        })}\n`,
+      );
 
       if (!options.yes) {
         const reply = await confirm({ message: t('update:applyPrompt'), initialValue: true });
         if (isCancel(reply) || reply === false) {
-          process.stdout.write(`${t('update:applyDeclined', { version: currentVersion })}\n`);
+          process.stdout.write(
+            `${t('update:applyDeclined', { version: currentPack.manifest.version })}\n`,
+          );
           process.exitCode = 0;
           return;
         }
@@ -44,46 +48,32 @@ export function registerUpdateCommand(program: Command, env: AudithexEnv): void 
 
       const result = await runUpdate({
         home,
-        manifestUrl,
-        fetcher: httpFetcher,
-        currentVersion,
+        rulesPackUrl,
         selftest: (packDir) => selftestNewPack(packDir),
       });
 
       switch (result.kind) {
         case 'up-to-date':
-          process.stdout.write(`${t('update:alreadyLatest')}\n`);
+          process.stdout.write(`${t('update:alreadyLatest', { commit: result.commit })}\n`);
           process.exitCode = 0;
           return;
         case 'installed':
-          process.stdout.write(`${t('update:installed', { from: result.from, to: result.to })}\n`);
-          if (result.prunedVersions.length > 0) {
-            process.stdout.write(
-              `${t('update:pruned', { count: result.prunedVersions.length })}\n`,
-            );
-          }
+          process.stdout.write(
+            `${t('update:installed', {
+              from: result.from ?? t('update:noCommit'),
+              to: result.to,
+              version: result.manifestVersion,
+            })}\n`,
+          );
           process.exitCode = 0;
           return;
         case 'rolled-back':
           process.stderr.write(
             `${t('update:selftestFailed', {
-              version: result.attempted,
-              previous: readCurrentVersion(home) ?? result.from,
+              attempted: result.attempted,
+              previous: result.from ?? t('update:noCommit'),
             })}\n`,
           );
-          process.exitCode = 2;
-          return;
-        case 'checksum-mismatch':
-          process.stderr.write(
-            `${t('update:checksumMismatch', {
-              expected: result.expected,
-              actual: result.actual,
-            })}\n`,
-          );
-          process.exitCode = 2;
-          return;
-        case 'invalid-payload':
-          process.stderr.write(`${t('update:invalidPayload', { reason: result.reason })}\n`);
           process.exitCode = 2;
           return;
         case 'fetch-failed':
@@ -99,9 +89,9 @@ async function selftestNewPack(packDir: string): Promise<boolean> {
     const pack = loadRulesPack({ userRulesPackDir: packDir });
     if (pack.source !== 'user') return false;
     // Smoke: walk the current working directory once and run the new
-    // rules. We are not yet asserting expected findings (that lands in
-    // task #4 with the banking-bot fixture); we only verify the new
-    // pack does not throw during load or evaluation.
+    // rules. We are not yet asserting expected findings (the
+    // banking-bot fixture is the future contract for "real" selftest);
+    // we only verify the new pack does not throw during load or evaluation.
     const discovery = discover({ rootPath: process.cwd() });
     runRules(discovery, { rulesPack: pack });
     return true;

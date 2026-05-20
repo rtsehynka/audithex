@@ -1,0 +1,11 @@
+{
+  "pass": "PASS",
+  "fail": "FAIL",
+  "noFixtures": "У {{root}} не знайдено жодної fixture з expected-findings.json.",
+  "fixtureLine": "{{fixture}}: {{verdict}} (tp={{tp}} fp={{fp}} fn={{fn}} precision={{precision}} recall={{recall}})",
+  "summary": "selftest: {{verdict}} на {{count}} fixture(-ах) — пороги precision>={{precision}}, recall>={{recall}}",
+  "flags": {
+    "fixtureRoot": "Перевизначити кореневу директорію, де шукаються fixtures",
+    "fixture": "Запустити лише вказану fixture (за іменем директорії)"
+  }
+}
