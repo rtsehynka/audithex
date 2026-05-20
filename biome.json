@@ -16,7 +16,8 @@
       "**/*.snap",
       "fixtures/**",
       "**/cypress/screenshots/**",
-      "**/cypress/videos/**"
+      "**/cypress/videos/**",
+      "**/next-env.d.ts"
     ]
   },
   "organizeImports": {

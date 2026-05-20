@@ -12,7 +12,7 @@ The scanner is polyglot. It ships native TypeScript Compiler API parsers for `.t
 
 - **CLI commands:** `scan`, `update`, `selftest`, `history`, `ui`, `user`, `init`, `version`
 - **Optional MongoDB persistence** — point `MONGODB_URI` at any Mongo and every scan is saved to the `scan_runs` collection for review through `audithex history` and the local web UI. The CLI runs fully without MongoDB; persistence is purely opt-in.
-- **Local web UI** — `audithex ui` boots a single-user dashboard on `http://localhost:7777` (Next.js 15 + React 19 + Tailwind 3, bcrypt-signed cookie auth, Cypress-covered).
+- **Local web UI** — `audithex ui` boots a single-user dashboard on `http://localhost:7777` (Next.js 16 + React 19 + Tailwind 3, bcrypt-signed cookie auth, Cypress-covered).
 - **10 rules (R001 – R010)** covering OWASP LLM02, LLM06, LLM07, LLM08, mapped to CWE-22, 78, 79, 89, 94, 798, 918
 - **20 secret patterns** for OpenAI, Anthropic, Google, Cohere, Mistral, Hugging Face, Replicate, GitHub, GitLab, Slack, Discord, AWS, Stripe, Twilio, SendGrid
 - **3 rule engines:** `regex-in-code`, `regex-in-prompt`, `artifact-property`
@@ -346,7 +346,7 @@ Override one rule's severity or disable it entirely:
 audithex/
 ├── apps/
 │   ├── cli/                   Node 22 CLI: commander, @clack/prompts, dotenv, zod, i18next
-│   └── web/                   Next.js 15 + React 19 + Tailwind 3 — local single-user dashboard
+│   └── web/                   Next.js 16 + React 19 + Tailwind 3 — local single-user dashboard
 │                              (server-action auth, signed-cookie sessions, Cypress e2e suite)
 ├── packages/
 │   ├── core-languages         Central language registry (TS, JS, Python, PHP, Go, Java, Ruby, plain-text)
