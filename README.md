@@ -557,7 +557,35 @@ The full license text is in [`LICENSE`](./LICENSE).
   network-accessible service (e.g. a hosted scanner), you must offer the
   modified source code to the users of that service. This is the key
   difference from plain GPL-3.0 and the reason Audithex picked AGPL.
-- **No warranty.** The software is provided "as is."
+
+### No warranty, no liability
+
+Per **sections 15, 16, and 17** of the GNU Affero General Public License
+(reproduced verbatim in [`LICENSE`](./LICENSE)):
+
+- Audithex is provided **"AS IS"** without warranty of any kind, express or
+  implied — including but not limited to the implied warranties of
+  merchantability and fitness for a particular purpose.
+- **The entire risk** of running Audithex against your code, your database,
+  or your production data is **yours**. Should the tool prove defective, you
+  assume the cost of all necessary servicing, repair, or correction.
+- **In no event** will the copyright holders or any contributor be liable
+  for any damages — general, special, incidental, or consequential — arising
+  out of the use or inability to use the program, including lost data, data
+  rendered inaccurate, losses sustained by you or by third parties, or any
+  failure of the program to operate with other software, even if a holder
+  has been advised of the possibility of such damages.
+- If a court refuses to give the disclaimer above local legal effect,
+  section 17 instructs that court to apply the local law that **most closely
+  approximates an absolute waiver of all civil liability** in connection
+  with the program.
+
+This applies to every byte the project ships — the CLI, the web UI, the
+rules pack, the AI-fix recommendations served by `claude-sonnet`, the
+Postgres scanner in `@audithex/core-db-scan`, and every script under
+`apps/web/scripts/`. **Run it against your own systems, on your own
+authority. The authors and contributors carry no responsibility for the
+outcome.**
 
 If AGPL-3.0 does not fit your use case (for example, you want to bundle
 Audithex into a closed-source product), open an issue to discuss a separate

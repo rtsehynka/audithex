@@ -36,5 +36,13 @@
     "version": {
       "summary": "Показати встановлену версію Audithex"
     }
+  },
+  "version": {
+    "legal": {
+      "copyright": "Copyright (C) 2026 Roman Tsehynka та контрибʼютори Audithex.",
+      "license": "Ліцензія AGPL-3.0-or-later: GNU Affero General Public License v3 або новіша <https://gnu.org/licenses/agpl.html>.",
+      "freedom": "Це вільне програмне забезпечення: ви можете змінювати та поширювати його.",
+      "noWarranty": "БЕЗ ЖОДНИХ ГАРАНТІЙ та БЕЗ БУДЬ-ЯКОЇ ВІДПОВІДАЛЬНОСТІ автора, у межах, дозволених законом. Використання — на ваш страх і ризик."
+    }
   }
 }

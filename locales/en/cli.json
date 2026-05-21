@@ -36,5 +36,13 @@
     "version": {
       "summary": "Print the installed Audithex version"
     }
+  },
+  "version": {
+    "legal": {
+      "copyright": "Copyright (C) 2026 Roman Tsehynka and Audithex contributors.",
+      "license": "License AGPL-3.0-or-later: GNU Affero General Public License v3 or later <https://gnu.org/licenses/agpl.html>.",
+      "freedom": "This is free software: you are free to change and redistribute it.",
+      "noWarranty": "There is NO WARRANTY and NO LIABILITY of any kind, to the extent permitted by law. Use at your own risk."
+    }
   }
 }
