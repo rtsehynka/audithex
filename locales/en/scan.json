@@ -23,5 +23,7 @@
   "persistFailed": "Could not persist scan to MongoDB: {{error}}",
   "noProject": "—",
   "projectRequiresMongo": "--project / AUDITHEX_PROJECT requires MONGODB_URI to be set.",
-  "projectNotFound": "Project '{{name}}' not found in MongoDB. {{error}}"
+  "projectNotFound": "Project '{{name}}' not found in MongoDB. {{error}}",
+  "dbScanned": "Database scan: {{tables}} table(s), {{rows}} row(s), {{findings}} finding(s) in {{ms}}ms.",
+  "dbFailed": "Database scan failed: {{error}}"
 }

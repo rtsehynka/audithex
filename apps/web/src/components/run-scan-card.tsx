@@ -14,8 +14,8 @@ interface LogLine {
 }
 
 interface ScanRunEvent {
-  type: 'start' | 'discovery' | 'rules' | 'rule' | 'persist' | 'done' | 'error';
-  phase?: 'begin' | 'end' | 'loaded';
+  type: 'start' | 'discovery' | 'rules' | 'rule' | 'db' | 'persist' | 'done' | 'error';
+  phase?: 'begin' | 'end' | 'loaded' | 'table' | 'error';
   project?: string;
   rootPath?: string;
   totalFiles?: number;
@@ -29,6 +29,13 @@ interface ScanRunEvent {
   scanId?: string;
   totalFindings?: number;
   message?: string;
+  driver?: string;
+  tables?: number;
+  scanAllTables?: boolean;
+  table?: string;
+  rowsScanned?: number;
+  findingsAdded?: number;
+  tablesScanned?: number;
 }
 
 /**
@@ -186,6 +193,20 @@ function renderEvent(evt: ScanRunEvent): string {
       return `Loaded rules pack ${evt.version ?? ''} (${evt.source ?? ''}) — ${evt.total ?? 0} rules`;
     case 'rule':
       return `[${String(evt.index ?? '?').padStart(2, ' ')}/${evt.total ?? '?'}] ${evt.ruleId ?? ''}: ${evt.findings ?? 0} finding${evt.findings === 1 ? '' : 's'}`;
+    case 'db':
+      if (evt.phase === 'begin') {
+        return `DB scan (${evt.driver ?? ''}): ${evt.tables ?? 0} table(s) selected${evt.scanAllTables ? ', scan-all is ON' : ''}`;
+      }
+      if (evt.phase === 'table') {
+        return `[${String(evt.index ?? '?').padStart(2, ' ')}/${evt.total ?? '?'}] db ${evt.table ?? ''}: ${evt.rowsScanned ?? 0} rows, ${evt.findingsAdded ?? 0} finding(s)`;
+      }
+      if (evt.phase === 'end') {
+        return `DB scan done · ${evt.tablesScanned ?? 0} tables · ${evt.rowsScanned ?? 0} rows · ${evt.findingsAdded ?? 0} findings · ${evt.elapsedMs ?? 0} ms`;
+      }
+      if (evt.phase === 'error') {
+        return `DB scan failed: ${evt.message ?? ''}`;
+      }
+      return JSON.stringify(evt);
     case 'persist':
       return 'Persisting scan to MongoDB…';
     case 'done':

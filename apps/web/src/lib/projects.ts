@@ -1,4 +1,5 @@
 import {
+  type ProjectDbConnection,
   createProject as repoCreate,
   deleteProject as repoDelete,
   getProjectById as repoGetById,
@@ -22,6 +23,9 @@ export interface ProjectView {
   description: string | null;
   severityOverrides: Record<string, Severity>;
   disabledRuleIds: string[];
+  dbConnection: ProjectDbConnection | null;
+  dbTables: string[];
+  dbScanAllTables: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,6 +56,9 @@ export interface CreateProjectFromUiInput {
   description: string | null;
   severityOverrides: Record<string, Severity>;
   disabledRuleIds: string[];
+  dbConnection?: ProjectDbConnection | null;
+  dbTables?: string[];
+  dbScanAllTables?: boolean;
 }
 
 export async function createProjectFromUi(
@@ -93,6 +100,9 @@ function toView(doc: {
   description?: string | null;
   severityOverrides?: Record<string, Severity>;
   disabledRuleIds?: string[];
+  dbConnection?: ProjectDbConnection | null;
+  dbTables?: string[];
+  dbScanAllTables?: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }): ProjectView {
@@ -103,6 +113,15 @@ function toView(doc: {
     description: doc.description ?? null,
     severityOverrides: doc.severityOverrides ?? {},
     disabledRuleIds: [...(doc.disabledRuleIds ?? [])],
+    dbConnection: doc.dbConnection
+      ? {
+          driver: doc.dbConnection.driver,
+          uri: doc.dbConnection.uri,
+          database: doc.dbConnection.database ?? null,
+        }
+      : null,
+    dbTables: [...(doc.dbTables ?? [])],
+    dbScanAllTables: doc.dbScanAllTables ?? false,
     createdAt: doc.createdAt ? doc.createdAt.toISOString() : new Date(0).toISOString(),
     updatedAt: doc.updatedAt ? doc.updatedAt.toISOString() : new Date(0).toISOString(),
   };

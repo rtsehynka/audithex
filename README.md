@@ -269,6 +269,22 @@ The dashboard surfaces these routes:
 - **`/settings`** — read-only info page: Audithex CLI version, session TTL, cookie name, MongoDB connection status + masked URI + database name + `scan_runs` count, the latest five rules-pack update outcomes. Surfaces a clear hint that on-disk overrides live in `.audithex/config.json` and the CLI owns the truth. A "→ Change email or password" link jumps to `/settings/account`.
 - **`/settings/account`** — change-email and change-password forms. Both require the current password (`verifyPassword` against the stored bcrypt hash) before any update lands; the change-email path re-issues the session cookie so the user stays signed in under the new address. Password rotation does NOT re-issue the cookie — any active session keeps working until the cookie expires.
 
+### RAG / database scanning
+
+A project record can carry an optional database connection. When set, the scan pipeline (CLI `audithex scan --project <name>` and the web "Run scan" card) connects to the configured database after the filesystem scan and walks the listed tables with the same secret-pattern rules used against source files. Findings get a synthetic `db://<database>/<schema>.<table>?row=<n>&column=<col>` location so the existing report / persistence / PDF / diff pipelines treat them like any other finding.
+
+The first-supported driver is **Postgres** (more dialects to come). The connection card on `/projects/new` and `/projects/[id]` accepts:
+
+| Field | Required | Notes |
+|---|---|---|
+| Driver | — | Leave blank to skip the DB scan entirely. `postgres` is currently the only valid value. |
+| Connection URI | when a driver is set | Standard `postgres://user:pass@host:port/dbname` URI. Override with `Database name` if the URI's path is blank. |
+| Database name | — | Optional override; falls back to the path component of the URI for the synthetic `db://...` finding location. |
+| Tables | — | Comma- or space-separated `schema.table` list. Scanned in order. |
+| Scan all tables | — | **Opt-in only.** When the table list is empty and this is unchecked, the scanner refuses to run rather than silently walking every table — which can be hours of overhead on real schemas. |
+
+The scanner samples up to 500 rows per table (text / varchar / json / jsonb columns) and runs every secret-pattern bundle the rules pack ships. CLI output shows a `Database scan: N table(s), M row(s), K finding(s)` line; the web UI streams per-table progress events over SSE alongside the rule events.
+
 ### Projects: scope, overrides, disabled rules
 
 A **project** is a named, persisted bundle of "I want these rules disabled" and "I want these severities overridden" that the scanner picks up when invoked with `--project <name>`. Projects live in Mongo (`projects` collection) and are managed identically from the CLI and the web UI:
@@ -516,4 +532,33 @@ The `.env` failed `zod` validation. The error message lists the offending key an
 
 ## License
 
-AGPL-3.0-or-later.
+Copyright (C) 2026 Roman Tsehynka and Audithex contributors.
+
+Audithex is free software: you can redistribute it and/or modify it under the
+terms of the GNU Affero General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version.
+
+Audithex is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+details.
+
+The full license text is in [`LICENSE`](./LICENSE).
+
+### What AGPL-3.0 means for you in plain terms
+
+- **You can** use Audithex commercially, modify it, distribute it, and run it
+  privately — for free.
+- **You must** keep the same AGPL-3.0 license on any fork or derived work,
+  include the original copyright notice, and state significant changes you
+  made.
+- **Network use is distribution.** If you run a modified Audithex as a
+  network-accessible service (e.g. a hosted scanner), you must offer the
+  modified source code to the users of that service. This is the key
+  difference from plain GPL-3.0 and the reason Audithex picked AGPL.
+- **No warranty.** The software is provided "as is."
+
+If AGPL-3.0 does not fit your use case (for example, you want to bundle
+Audithex into a closed-source product), open an issue to discuss a separate
+commercial license.

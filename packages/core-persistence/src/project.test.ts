@@ -66,6 +66,54 @@ describe('Project CRUD', () => {
     }
   });
 
+  it('defaults the db-scanning fields to an empty config', async () => {
+    const created = await createProject(getConn(), {
+      name: 'db-defaults',
+      rootPath: '/abs',
+    });
+    expect(created.dbConnection ?? null).toBeNull();
+    expect(created.dbTables).toEqual([]);
+    expect(created.dbScanAllTables).toBe(false);
+  });
+
+  it('round-trips a dbConnection + dbTables + dbScanAllTables', async () => {
+    const created = await createProject(getConn(), {
+      name: 'with-db',
+      rootPath: '/abs',
+      dbConnection: {
+        driver: 'postgres',
+        uri: 'postgres://user:pass@localhost:5432/rag',
+        database: 'rag',
+      },
+      dbTables: ['documents', 'conversations'],
+      dbScanAllTables: false,
+    });
+    const byId = await getProjectById(getConn(), String(created._id));
+    expect(byId?.dbConnection?.driver).toBe('postgres');
+    expect(byId?.dbConnection?.uri).toContain('rag');
+    expect(byId?.dbTables).toEqual(['documents', 'conversations']);
+    expect(byId?.dbScanAllTables).toBe(false);
+  });
+
+  it('updateProject can clear the dbConnection back to null', async () => {
+    const created = await createProject(getConn(), {
+      name: 'clear-db',
+      rootPath: '/abs',
+      dbConnection: {
+        driver: 'postgres',
+        uri: 'postgres://localhost/x',
+      },
+      dbTables: ['t1'],
+    });
+    const updated = await updateProject(getConn(), String(created._id), {
+      dbConnection: null,
+      dbTables: [],
+      dbScanAllTables: false,
+    });
+    expect(updated?.dbConnection ?? null).toBeNull();
+    expect(updated?.dbTables).toEqual([]);
+  });
+
   it('deletes a project by id', async () => {
     const created = await createProject(getConn(), { name: 'goodbye', rootPath: '/y' });
     const removed = await deleteProject(getConn(), String(created._id));

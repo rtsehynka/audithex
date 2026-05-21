@@ -165,6 +165,73 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
         <input type="hidden" name="severityOverrides" value={severityOverridesText} />
       </section>
 
+      <section
+        data-testid="project-db"
+        className="flex flex-col gap-3 rounded-md border border-[#1f242d] bg-[#0b0e14] p-4"
+      >
+        <header>
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-[#10b981]">
+            Database (optional)
+          </h3>
+          <p className="mt-1 text-[10px] text-[#6b7280]">
+            Scans the configured tables for the same secret-pattern rules the file scanner uses.
+            Leave the driver blank to skip the database scan. "Scan all tables" is opt-in only —
+            walking every table on every scan is overhead and usually not what you want.
+          </p>
+        </header>
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-[#6b7280]">Driver</span>
+          <select
+            name="dbDriver"
+            defaultValue={initial?.dbConnection?.driver ?? ''}
+            data-testid="project-db-driver"
+            className="rounded-md border border-[#1f242d] bg-[#0b0e14] px-3 py-2 text-sm focus:border-[#10b981] focus:outline-none"
+          >
+            <option value="">— none —</option>
+            <option value="postgres">postgres</option>
+          </select>
+          {fieldError('dbDriver') ? (
+            <span className="text-xs text-[#ef4444]">{fieldError('dbDriver')}</span>
+          ) : null}
+        </label>
+        <Field
+          name="dbUri"
+          label="Connection URI"
+          defaultValue={initial?.dbConnection?.uri ?? ''}
+          testid="project-db-uri"
+          error={fieldError('dbUri')}
+        />
+        <Field
+          name="dbDatabase"
+          label="Database name (optional)"
+          defaultValue={initial?.dbConnection?.database ?? ''}
+          testid="project-db-database"
+          error={fieldError('dbDatabase')}
+        />
+        <Field
+          name="dbTables"
+          label="Tables (comma- or space-separated, e.g. public.documents, public.chunks)"
+          defaultValue={(initial?.dbTables ?? []).join(', ')}
+          testid="project-db-tables"
+          error={fieldError('dbTables')}
+        />
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="dbScanAllTables"
+            defaultChecked={initial?.dbScanAllTables ?? false}
+            data-testid="project-db-scan-all"
+            className="h-4 w-4 cursor-pointer accent-[#10b981]"
+          />
+          <span className="text-[#d4d4d4]">
+            Scan all tables when the list above is empty
+            <span className="ml-2 text-[10px] text-[#6b7280]">
+              (opt-in — leave off unless you really mean every table)
+            </span>
+          </span>
+        </label>
+      </section>
+
       {state?.error ? (
         <p
           data-testid="project-form-error"

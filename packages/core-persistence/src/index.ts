@@ -55,4 +55,9 @@ export {
   type AiFixDocument,
   type LlmProvider,
 } from './models/ai-fix.js';
-export { getProjectModel, type ProjectDocument } from './models/project.js';
+export {
+  getProjectModel,
+  type DbDriver,
+  type ProjectDbConnection,
+  type ProjectDocument,
+} from './models/project.js';

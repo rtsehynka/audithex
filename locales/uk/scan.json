@@ -23,5 +23,7 @@
   "persistFailed": "Не вдалося зберегти скан у MongoDB: {{error}}",
   "noProject": "—",
   "projectRequiresMongo": "--project / AUDITHEX_PROJECT потребує MONGODB_URI.",
-  "projectNotFound": "Проєкт '{{name}}' не знайдено у MongoDB. {{error}}"
+  "projectNotFound": "Проєкт '{{name}}' не знайдено у MongoDB. {{error}}",
+  "dbScanned": "Скан бази: {{tables}} таблиц., {{rows}} рядк., {{findings}} знахідок за {{ms}}мс.",
+  "dbFailed": "Сканування бази даних не вдалося: {{error}}"
 }

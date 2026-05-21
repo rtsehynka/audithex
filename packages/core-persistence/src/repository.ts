@@ -2,7 +2,11 @@ import { createHash } from 'node:crypto';
 import type { Finding, ScanResult, Severity } from '@audithex/core-types';
 import type { Connection } from 'mongoose';
 import { type AiFixDocument, getAiFixModel } from './models/ai-fix.js';
-import { type ProjectDocument, getProjectModel } from './models/project.js';
+import {
+  type ProjectDbConnection,
+  type ProjectDocument,
+  getProjectModel,
+} from './models/project.js';
 import {
   type RulesPackUpdateDocument,
   type UpdateOutcomeKind,
@@ -303,6 +307,9 @@ export interface CreateProjectInput {
   description?: string | null;
   severityOverrides?: ProjectDocument['severityOverrides'];
   disabledRuleIds?: string[];
+  dbConnection?: ProjectDbConnection | null;
+  dbTables?: string[];
+  dbScanAllTables?: boolean;
 }
 
 export type UpdateProjectInput = Partial<Omit<CreateProjectInput, 'name'>> & {
@@ -320,12 +327,17 @@ export async function createProject(
     description: input.description ?? null,
     severityOverrides: input.severityOverrides ?? {},
     disabledRuleIds: input.disabledRuleIds ?? [],
+    dbConnection: input.dbConnection ?? null,
+    dbTables: input.dbTables ?? [],
+    dbScanAllTables: input.dbScanAllTables ?? false,
   });
   const doc = created.toObject({ versionKey: false });
   return {
     ...doc,
     severityOverrides: doc.severityOverrides ?? {},
     disabledRuleIds: doc.disabledRuleIds ?? [],
+    dbTables: doc.dbTables ?? [],
+    dbScanAllTables: doc.dbScanAllTables ?? false,
   };
 }
 

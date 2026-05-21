@@ -12,6 +12,25 @@ import { Schema } from 'mongoose';
  * The web UI surfaces a CRUD form over the same document so a single
  * source of truth lives in MongoDB.
  */
+/**
+ * RAG / operational database the project's LLM reads from. When set,
+ * the scanner connects to this database after the filesystem scan and
+ * walks the configured tables — looking for the same rule classes
+ * (secrets, prompt-injection payloads, PII) the file scan covers, but
+ * inside row content. The driver list grows as we add dialects;
+ * `postgres` is the first-supported one.
+ *
+ * The "scan all tables" toggle is deliberately opt-in: walking every
+ * table by default is too much overhead for big production schemas.
+ */
+export type DbDriver = 'postgres';
+
+export interface ProjectDbConnection {
+  driver: DbDriver;
+  uri: string;
+  database?: string | null;
+}
+
 export interface ProjectDocument {
   _id?: string;
   name: string;
@@ -19,9 +38,21 @@ export interface ProjectDocument {
   description?: string | null;
   severityOverrides: Record<string, Severity>;
   disabledRuleIds: string[];
+  dbConnection?: ProjectDbConnection | null;
+  dbTables: string[];
+  dbScanAllTables: boolean;
   createdAt?: Date;
   updatedAt?: Date;
 }
+
+const DbConnectionSchema = new Schema<ProjectDbConnection>(
+  {
+    driver: { type: String, required: true, enum: ['postgres'] satisfies DbDriver[] },
+    uri: { type: String, required: true },
+    database: { type: String, default: null },
+  },
+  { _id: false },
+);
 
 const ProjectSchema = new Schema<ProjectDocument>(
   {
@@ -30,6 +61,9 @@ const ProjectSchema = new Schema<ProjectDocument>(
     description: { type: String, default: null },
     severityOverrides: { type: Schema.Types.Mixed, default: {} },
     disabledRuleIds: { type: [String], default: [] },
+    dbConnection: { type: DbConnectionSchema, default: null },
+    dbTables: { type: [String], default: [] },
+    dbScanAllTables: { type: Boolean, default: false },
   },
   { timestamps: true, collection: 'projects' },
 );

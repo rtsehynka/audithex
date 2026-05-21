@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { scanDatabase } from '@audithex/core-db-scan';
 import { discover } from '@audithex/core-discovery';
 import { getProjectByName, saveScanRun } from '@audithex/core-persistence';
 import { loadRulesPack, runRules } from '@audithex/core-rules';
@@ -24,6 +25,25 @@ export type ScanRunEvent =
       index: number;
       total: number;
     }
+  | { type: 'db'; phase: 'begin'; driver: string; tables: number; scanAllTables: boolean }
+  | {
+      type: 'db';
+      phase: 'table';
+      table: string;
+      rowsScanned: number;
+      findingsAdded: number;
+      index: number;
+      total: number;
+    }
+  | {
+      type: 'db';
+      phase: 'end';
+      tablesScanned: number;
+      rowsScanned: number;
+      findingsAdded: number;
+      elapsedMs: number;
+    }
+  | { type: 'db'; phase: 'error'; message: string }
   | { type: 'persist'; phase: 'begin' }
   | { type: 'done'; scanId: string; totalFindings: number; elapsedMs: number }
   | { type: 'error'; message: string };
@@ -85,6 +105,54 @@ export async function* runProjectScan(projectId: string): AsyncGenerator<ScanRun
     },
   });
   for (const evt of events) yield evt;
+
+  if (project.dbConnection) {
+    const dbStart = Date.now();
+    yield {
+      type: 'db',
+      phase: 'begin',
+      driver: project.dbConnection.driver,
+      tables: project.dbTables?.length ?? 0,
+      scanAllTables: project.dbScanAllTables ?? false,
+    };
+    try {
+      const beforeDb = collected.length;
+      const tableEvents: ScanRunEvent[] = [];
+      const dbResult = await scanDatabase({
+        connection: project.dbConnection,
+        rulesPack: pack,
+        tables: project.dbTables ?? [],
+        scanAllTables: project.dbScanAllTables ?? false,
+        onTableScanned: (e) => {
+          tableEvents.push({
+            type: 'db',
+            phase: 'table',
+            table: e.table,
+            rowsScanned: e.rowsScanned,
+            findingsAdded: e.findingsAdded,
+            index: e.index,
+            total: e.total,
+          });
+        },
+      });
+      for (const evt of tableEvents) yield evt;
+      collected.push(...dbResult.findings);
+      yield {
+        type: 'db',
+        phase: 'end',
+        tablesScanned: dbResult.tablesScanned.length,
+        rowsScanned: dbResult.rowsScanned,
+        findingsAdded: collected.length - beforeDb,
+        elapsedMs: Date.now() - dbStart,
+      };
+    } catch (err) {
+      yield {
+        type: 'db',
+        phase: 'error',
+        message: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
 
   yield { type: 'persist', phase: 'begin' };
   const conn = await getConnection();

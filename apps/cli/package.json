@@ -16,6 +16,7 @@
     "test": "vitest run --passWithNoTests --dir ./src"
   },
   "dependencies": {
+    "@audithex/core-db-scan": "workspace:*",
     "@audithex/core-discovery": "workspace:*",
     "@audithex/core-eval-runner": "workspace:*",
     "@audithex/core-i18n": "workspace:*",

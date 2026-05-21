@@ -1,4 +1,5 @@
 import { join, resolve } from 'node:path';
+import { scanDatabase } from '@audithex/core-db-scan';
 import { discover } from '@audithex/core-discovery';
 import { t } from '@audithex/core-i18n';
 import {
@@ -77,6 +78,34 @@ export function registerScanCommand(program: Command, env: AudithexEnv): void {
             }
           : {}),
       });
+
+      // When the project carries a DB connection, run the same secret
+      // rules against text-shaped columns of the configured tables.
+      // Refuses to walk the whole database unless dbScanAllTables is on
+      // (the user must opt in explicitly; "scan everything" is overhead).
+      if (project?.dbConnection) {
+        try {
+          const dbResult = await scanDatabase({
+            connection: project.dbConnection,
+            rulesPack: pack,
+            tables: project.dbTables ?? [],
+            scanAllTables: project.dbScanAllTables ?? false,
+          });
+          findings.push(...dbResult.findings);
+          process.stdout.write(
+            `${t('scan:dbScanned', {
+              tables: dbResult.tablesScanned.length,
+              rows: dbResult.rowsScanned,
+              findings: dbResult.findings.length,
+              ms: dbResult.elapsedMs,
+            })}\n`,
+          );
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          process.stderr.write(`${t('scan:dbFailed', { error: message })}\n`);
+        }
+      }
+
       const result: ScanResult = {
         rootPath: discovery.rootPath,
         scannedAt: discovery.scannedAt,

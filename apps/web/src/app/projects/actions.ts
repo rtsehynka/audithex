@@ -1,5 +1,6 @@
 'use server';
 
+import type { ProjectDbConnection } from '@audithex/core-persistence';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -17,6 +18,11 @@ const ProjectFormSchema = z.object({
   description: z.string().optional(),
   disabledRuleIds: z.string().optional(),
   severityOverrides: z.string().optional(),
+  dbDriver: z.string().optional(),
+  dbUri: z.string().optional(),
+  dbDatabase: z.string().optional(),
+  dbTables: z.string().optional(),
+  dbScanAllTables: z.string().optional(),
 });
 
 export interface ProjectActionResult {
@@ -31,6 +37,9 @@ interface ParsedProjectPayload {
   description: string | null;
   disabledRuleIds: string[];
   severityOverrides: Record<string, SeverityValue>;
+  dbConnection: ProjectDbConnection | null;
+  dbTables: string[];
+  dbScanAllTables: boolean;
 }
 
 /**
@@ -48,6 +57,11 @@ function parseProjectForm(
     description: formData.get('description') ?? '',
     disabledRuleIds: formData.get('disabledRuleIds') ?? '',
     severityOverrides: formData.get('severityOverrides') ?? '',
+    dbDriver: formData.get('dbDriver') ?? '',
+    dbUri: formData.get('dbUri') ?? '',
+    dbDatabase: formData.get('dbDatabase') ?? '',
+    dbTables: formData.get('dbTables') ?? '',
+    dbScanAllTables: formData.get('dbScanAllTables') ?? '',
   });
   if (!parsed.success) {
     return {
@@ -78,6 +92,38 @@ function parseProjectForm(
       },
     };
   }
+  const dbDriver = parsed.data.dbDriver?.trim() ?? '';
+  const dbUri = parsed.data.dbUri?.trim() ?? '';
+  let dbConnection: ProjectDbConnection | null = null;
+  if (dbDriver) {
+    if (dbDriver !== 'postgres') {
+      return {
+        ok: false,
+        result: {
+          ok: false,
+          fieldErrors: { dbDriver: 'Only the `postgres` driver is supported for now.' },
+        },
+      };
+    }
+    if (!dbUri) {
+      return {
+        ok: false,
+        result: {
+          ok: false,
+          fieldErrors: {
+            dbUri: 'Connection URI is required when a driver is selected.',
+          },
+        },
+      };
+    }
+    dbConnection = {
+      driver: 'postgres',
+      uri: dbUri,
+      database: parsed.data.dbDatabase?.trim() || null,
+    };
+  }
+  const dbTables = parseTableList(parsed.data.dbTables);
+  const dbScanAllTables = parsed.data.dbScanAllTables === 'on';
   return {
     ok: true,
     data: {
@@ -86,6 +132,9 @@ function parseProjectForm(
       description: parsed.data.description?.trim() || null,
       disabledRuleIds: ids,
       severityOverrides: overrides,
+      dbConnection,
+      dbTables,
+      dbScanAllTables,
     },
   };
 }
@@ -135,6 +184,16 @@ export async function deleteProjectAction(id: string): Promise<void> {
   revalidatePath('/projects');
   revalidatePath('/');
   redirect('/projects');
+}
+
+function parseTableList(raw: string | undefined): string[] {
+  if (!raw) return [];
+  const out: string[] = [];
+  for (const token of raw.split(/[,\s]+/)) {
+    const trimmed = token.trim();
+    if (trimmed.length > 0) out.push(trimmed);
+  }
+  return out;
 }
 
 function parseRuleIds(raw: string | undefined): string[] | null {
