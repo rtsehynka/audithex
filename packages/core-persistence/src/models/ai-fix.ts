@@ -10,7 +10,7 @@ import { Schema } from 'mongoose';
  * `findingKey` matches the identity the diff helper and eval-runner
  * use: `${ruleId}|${file}|${line}`.
  */
-export type LlmProvider = 'anthropic' | 'openai' | 'dry-run';
+export type LlmProvider = 'anthropic' | 'openai' | 'gemini' | 'dry-run';
 
 export interface AiFixDocument {
   _id?: string;

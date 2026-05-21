@@ -43,6 +43,11 @@ export interface SerializableFinding {
   messageKey: string;
   messageParams?: Record<string, string | number>;
   fixKey: string;
+  codeSnippet?: {
+    startLine: number;
+    focusLine: number;
+    lines: string[];
+  };
 }
 
 export interface SeverityCounts {
@@ -143,6 +148,15 @@ export async function getScan(id: string): Promise<ScanRunDetail | null> {
       messageKey: f.messageKey,
       ...(f.messageParams ? { messageParams: { ...f.messageParams } } : {}),
       fixKey: f.fixKey,
+      ...(f.codeSnippet
+        ? {
+            codeSnippet: {
+              startLine: f.codeSnippet.startLine,
+              focusLine: f.codeSnippet.focusLine,
+              lines: [...f.codeSnippet.lines],
+            },
+          }
+        : {}),
     })),
   };
 }

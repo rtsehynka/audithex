@@ -15,7 +15,7 @@ interface Props {
 
 const SEVERITIES = ['critical', 'high', 'medium', 'low'] as const;
 type Severity = (typeof SEVERITIES)[number];
-type RuleState = { disabled: boolean; override: Severity | '' };
+type RuleState = { enabled: boolean; override: Severity | '' };
 
 export default function ProjectForm({ initial, submitLabel, action, rules }: Props): ReactElement {
   const [state, formAction, pending] = useActionState<ProjectActionResult | null, FormData>(
@@ -24,38 +24,35 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
   );
   const fieldError = (key: string): string | undefined => state?.fieldErrors?.[key];
 
+  // Default posture: every rule in the active pack is ENABLED for a new
+  // project. The Mongo schema still stores `disabledRuleIds[]` — that
+  // stays the cheapest representation (an empty array = "all rules run")
+  // — but the form models the inverse so the UI reads naturally: a
+  // ticked checkbox means "yes, run this rule on this project."
+  const initialDisabled = new Set(initial?.disabledRuleIds ?? []);
   const initialRuleState: Record<string, RuleState> = {};
   for (const r of rules) {
     initialRuleState[r.id] = {
-      disabled: initial?.disabledRuleIds.includes(r.id) ?? false,
-      override: (initial?.severityOverrides[r.id] as Severity | undefined) ?? '',
+      enabled: !initialDisabled.has(r.id),
+      override: (initial?.severityOverrides?.[r.id] as Severity | undefined) ?? '',
     };
   }
-  const [ruleState, setRuleState] = useState<Record<string, RuleState>>(initialRuleState);
+  const [ruleState, setRuleState] = useState<Record<string, RuleState>>(() => initialRuleState);
 
-  const setDisabled = (id: string, disabled: boolean): void => {
+  const setEnabled = (id: string, enabled: boolean): void => {
     setRuleState((prev) => {
       const existing = prev[id];
-      const next: RuleState = existing ? { ...existing, disabled } : { disabled, override: '' };
+      const next: RuleState = existing ? { ...existing, enabled } : { enabled, override: '' };
       return { ...prev, [id]: next };
     });
   };
   const setOverride = (id: string, override: Severity | ''): void => {
     setRuleState((prev) => {
       const existing = prev[id];
-      const next: RuleState = existing ? { ...existing, override } : { disabled: false, override };
+      const next: RuleState = existing ? { ...existing, override } : { enabled: true, override };
       return { ...prev, [id]: next };
     });
   };
-
-  const disabledRuleIdsCsv = rules
-    .filter((r) => ruleState[r.id]?.disabled)
-    .map((r) => r.id)
-    .join(',');
-  const severityOverridesText = rules
-    .filter((r) => ruleState[r.id]?.override)
-    .map((r) => `${r.id}=${ruleState[r.id]?.override}`)
-    .join('\n');
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -91,11 +88,39 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
             <code className="text-[#10b981]">audithex update</code>.
           </span>
         </header>
+        <p className="text-[10px] leading-relaxed text-[#6b7280]">
+          <strong className="text-[#d4d4d4]">Every rule runs on this project by default</strong> —
+          new packs land enabled, no setup required. Use the controls below to tweak per-project
+          behaviour:
+        </p>
+        <ul className="ml-4 list-disc text-[10px] leading-relaxed text-[#6b7280]">
+          <li>
+            <strong className="text-[#d4d4d4]">Enabled</strong> — untick to skip that rule entirely
+            for this project. The rule still exists in the pack for other projects.
+          </li>
+          <li>
+            <strong className="text-[#d4d4d4]">Id</strong> — clickable link to{' '}
+            <code className="text-[#10b981]">/rules/[id]</code> with the rule's full message + fix
+            template + engine parameters.
+          </li>
+          <li>
+            <strong className="text-[#d4d4d4]">Default</strong> — the severity the rule ships with.
+          </li>
+          <li>
+            <strong className="text-[#d4d4d4]">Override</strong> — bump the rule up or down for{' '}
+            <em>this project only</em>. Findings emitted during a scan get the override severity;
+            the rule document in the pack is never mutated.
+          </li>
+          <li>
+            <strong className="text-[#d4d4d4]">OWASP / CWE</strong> — read-only references to the
+            categories the rule maps to.
+          </li>
+        </ul>
         <div className="overflow-x-auto rounded-md border border-[#1f242d]">
           <table className="min-w-full divide-y divide-[#1f242d] text-xs">
             <thead className="bg-[#0b0e14] text-[#6b7280]">
               <tr>
-                <Th>Disabled</Th>
+                <Th>Enabled</Th>
                 <Th>Id</Th>
                 <Th>Title</Th>
                 <Th>Default</Th>
@@ -106,20 +131,20 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
             </thead>
             <tbody className="divide-y divide-[#1f242d]">
               {rules.map((rule) => {
-                const s = ruleState[rule.id] ?? { disabled: false, override: '' };
+                const s = ruleState[rule.id] ?? { enabled: true, override: '' };
                 return (
                   <tr
                     key={rule.id}
                     data-testid="rule-row"
                     data-rule-id={rule.id}
-                    className={s.disabled ? 'opacity-50' : undefined}
+                    className={s.enabled ? undefined : 'opacity-50'}
                   >
                     <td className="px-3 py-2">
                       <input
                         type="checkbox"
-                        checked={s.disabled}
-                        onChange={(e) => setDisabled(rule.id, e.target.checked)}
-                        data-testid="rule-disabled"
+                        checked={s.enabled}
+                        onChange={(e) => setEnabled(rule.id, e.target.checked)}
+                        data-testid="rule-enabled"
                         className="h-4 w-4 cursor-pointer accent-[#10b981]"
                       />
                     </td>
@@ -161,8 +186,28 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
             </tbody>
           </table>
         </div>
-        <input type="hidden" name="disabledRuleIds" value={disabledRuleIdsCsv} />
-        <input type="hidden" name="severityOverrides" value={severityOverridesText} />
+        {/*
+         * One hidden input per disabled rule (rather than a single
+         * comma-joined CSV). React 19's useActionState + form
+         * serialisation handles individual named inputs reliably; the
+         * single-CSV-input version dropped values in some submit
+         * paths. Server reads with formData.getAll('disabledRuleIds').
+         */}
+        {rules
+          .filter((r) => ruleState[r.id]?.enabled === false)
+          .map((r) => (
+            <input key={`disabled-${r.id}`} type="hidden" name="disabledRuleIds" value={r.id} />
+          ))}
+        {rules
+          .filter((r) => ruleState[r.id]?.override)
+          .map((r) => (
+            <input
+              key={`override-${r.id}`}
+              type="hidden"
+              name="severityOverrides"
+              value={`${r.id}=${ruleState[r.id]?.override}`}
+            />
+          ))}
       </section>
 
       <section
@@ -174,9 +219,13 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
             Database (optional)
           </h3>
           <p className="mt-1 text-[10px] text-[#6b7280]">
-            Scans the configured tables for the same secret-pattern rules the file scanner uses.
-            Leave the driver blank to skip the database scan. "Scan all tables" is opt-in only —
-            walking every table on every scan is overhead and usually not what you want.
+            Connects to the project's RAG / operational database and runs the same secret-pattern
+            rules against text-typed columns or document fields. Supported drivers:{' '}
+            <strong className="text-[#d4d4d4]">postgres</strong> (tables) and{' '}
+            <strong className="text-[#d4d4d4]">mongodb</strong> (collections). Local instances only.
+            Leave the driver blank to skip the database scan. "Scan all tables / collections" is
+            opt-in only — walking every table on every scan is overhead and usually not what you
+            want.
           </p>
         </header>
         <label className="flex flex-col gap-1 text-sm">
@@ -189,6 +238,7 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
           >
             <option value="">— none —</option>
             <option value="postgres">postgres</option>
+            <option value="mongodb">mongodb</option>
           </select>
           {fieldError('dbDriver') ? (
             <span className="text-xs text-[#ef4444]">{fieldError('dbDriver')}</span>
@@ -196,21 +246,21 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
         </label>
         <Field
           name="dbUri"
-          label="Connection URI"
+          label="Connection URI (postgres://… or mongodb://…)"
           defaultValue={initial?.dbConnection?.uri ?? ''}
           testid="project-db-uri"
           error={fieldError('dbUri')}
         />
         <Field
           name="dbDatabase"
-          label="Database name (optional)"
+          label="Database name (optional override; falls back to the URI's path)"
           defaultValue={initial?.dbConnection?.database ?? ''}
           testid="project-db-database"
           error={fieldError('dbDatabase')}
         />
         <Field
           name="dbTables"
-          label="Tables (comma- or space-separated, e.g. public.documents, public.chunks)"
+          label="Tables / collections (comma- or space-separated, e.g. public.documents, conversations)"
           defaultValue={(initial?.dbTables ?? []).join(', ')}
           testid="project-db-tables"
           error={fieldError('dbTables')}
@@ -224,9 +274,9 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
             className="h-4 w-4 cursor-pointer accent-[#10b981]"
           />
           <span className="text-[#d4d4d4]">
-            Scan all tables when the list above is empty
+            Scan all tables / collections when the list above is empty
             <span className="ml-2 text-[10px] text-[#6b7280]">
-              (opt-in — leave off unless you really mean every table)
+              (opt-in — leave off unless you really mean every one of them)
             </span>
           </span>
         </label>

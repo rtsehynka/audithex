@@ -14,6 +14,15 @@ type IgnoreFactory = () => IgnoreInstance;
 const localRequire = createRequire(import.meta.url);
 const createIgnore = localRequire('ignore') as IgnoreFactory;
 
+export interface DiscoverFileEvent {
+  /** Forward-slash relative path of the file just processed. */
+  relPath: string;
+  /** 1-based position in the collected files list. */
+  index: number;
+  /** Total files that will be visited by the extractor pipeline. */
+  total: number;
+}
+
 export interface DiscoverOptions {
   rootPath: string;
   followSymlinks?: boolean;
@@ -30,6 +39,12 @@ export interface DiscoverOptions {
    * keep large-repo scans well under the week-2 budget.
    */
   maxFileSizeBytes?: number;
+  /**
+   * Fires after each scannable file has been extractor-processed.
+   * Used by the web UI's live scan stream to surface per-file
+   * progress in the log. Synchronous — throwing aborts the run.
+   */
+  onFile?: (event: DiscoverFileEvent) => void;
 }
 
 const DEFAULT_MAX_FILE_SIZE = 1024 * 1024;
@@ -166,20 +181,30 @@ export function discover(options: DiscoverOptions): DiscoveryResult {
   const artifacts: DiscoveryArtifact[] = [];
 
   if (extractors.length > 0) {
-    for (const rel of collectedFiles) {
+    const total = collectedFiles.length;
+    for (let i = 0; i < collectedFiles.length; i += 1) {
+      const rel = collectedFiles[i] as string;
       const language = getLanguageForFile(rel);
-      if (!language) continue;
+      if (!language) {
+        options.onFile?.({ relPath: rel, index: i + 1, total });
+        continue;
+      }
       const absolute = join(root, rel);
       try {
         const stat = statSync(absolute);
-        if (stat.size > maxFileSize) continue;
+        if (stat.size > maxFileSize) {
+          options.onFile?.({ relPath: rel, index: i + 1, total });
+          continue;
+        }
       } catch {
+        options.onFile?.({ relPath: rel, index: i + 1, total });
         continue;
       }
       let content: string;
       try {
         content = readFileSync(absolute, 'utf8');
       } catch {
+        options.onFile?.({ relPath: rel, index: i + 1, total });
         continue;
       }
       const ext = extensionOf(rel);
@@ -193,6 +218,7 @@ export function discover(options: DiscoverOptions): DiscoveryResult {
       for (const extractor of extractors) {
         artifacts.push(...extractor.extract(input));
       }
+      options.onFile?.({ relPath: rel, index: i + 1, total });
     }
   }
 

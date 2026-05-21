@@ -16,8 +16,6 @@ const ProjectFormSchema = z.object({
   name: z.string().min(1, 'Name is required.').max(64),
   rootPath: z.string().min(1, 'Root path is required.'),
   description: z.string().optional(),
-  disabledRuleIds: z.string().optional(),
-  severityOverrides: z.string().optional(),
   dbDriver: z.string().optional(),
   dbUri: z.string().optional(),
   dbDatabase: z.string().optional(),
@@ -55,8 +53,6 @@ function parseProjectForm(
     name: formData.get('name'),
     rootPath: formData.get('rootPath'),
     description: formData.get('description') ?? '',
-    disabledRuleIds: formData.get('disabledRuleIds') ?? '',
-    severityOverrides: formData.get('severityOverrides') ?? '',
     dbDriver: formData.get('dbDriver') ?? '',
     dbUri: formData.get('dbUri') ?? '',
     dbDatabase: formData.get('dbDatabase') ?? '',
@@ -69,17 +65,19 @@ function parseProjectForm(
       result: { ok: false, fieldErrors: collectFieldErrors(parsed.error.issues) },
     };
   }
-  const ids = parseRuleIds(parsed.data.disabledRuleIds);
+  // disabledRuleIds + severityOverrides come as one hidden input per
+  // disabled rule / per override line, so getAll() returns the array.
+  const ids = parseRuleIdList(formData.getAll('disabledRuleIds'));
   if (ids === null) {
     return {
       ok: false,
       result: {
         ok: false,
-        fieldErrors: { disabledRuleIds: 'Use comma-separated rule ids like R001,R002.' },
+        fieldErrors: { disabledRuleIds: 'Invalid rule id; expected R001…R999.' },
       },
     };
   }
-  const overrides = parseSeverityOverrides(parsed.data.severityOverrides);
+  const overrides = parseSeverityOverridesList(formData.getAll('severityOverrides'));
   if (overrides === null) {
     return {
       ok: false,
@@ -87,7 +85,7 @@ function parseProjectForm(
         ok: false,
         fieldErrors: {
           severityOverrides:
-            'Use lines like `R009=low` (one per line). Severity must be critical, high, medium, or low.',
+            'Invalid severity override; expected lines like R009=low (critical | high | medium | low).',
         },
       },
     };
@@ -96,12 +94,14 @@ function parseProjectForm(
   const dbUri = parsed.data.dbUri?.trim() ?? '';
   let dbConnection: ProjectDbConnection | null = null;
   if (dbDriver) {
-    if (dbDriver !== 'postgres') {
+    if (dbDriver !== 'postgres' && dbDriver !== 'mongodb') {
       return {
         ok: false,
         result: {
           ok: false,
-          fieldErrors: { dbDriver: 'Only the `postgres` driver is supported for now.' },
+          fieldErrors: {
+            dbDriver: 'Supported drivers: postgres, mongodb.',
+          },
         },
       };
     }
@@ -117,7 +117,7 @@ function parseProjectForm(
       };
     }
     dbConnection = {
-      driver: 'postgres',
+      driver: dbDriver,
       uri: dbUri,
       database: parsed.data.dbDatabase?.trim() || null,
     };
@@ -196,11 +196,11 @@ function parseTableList(raw: string | undefined): string[] {
   return out;
 }
 
-function parseRuleIds(raw: string | undefined): string[] | null {
-  if (!raw) return [];
+function parseRuleIdList(raw: readonly FormDataEntryValue[]): string[] | null {
   const ids: string[] = [];
-  for (const token of raw.split(/[,\s]+/)) {
-    const trimmed = token.trim();
+  for (const entry of raw) {
+    if (typeof entry !== 'string') continue;
+    const trimmed = entry.trim();
     if (trimmed.length === 0) continue;
     if (!RULE_ID_PATTERN.test(trimmed)) return null;
     ids.push(trimmed);
@@ -208,12 +208,14 @@ function parseRuleIds(raw: string | undefined): string[] | null {
   return ids;
 }
 
-function parseSeverityOverrides(raw: string | undefined): Record<string, SeverityValue> | null {
-  if (!raw) return {};
+function parseSeverityOverridesList(
+  raw: readonly FormDataEntryValue[],
+): Record<string, SeverityValue> | null {
   const out: Record<string, SeverityValue> = {};
-  for (const rawLine of raw.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith('#')) continue;
+  for (const entry of raw) {
+    if (typeof entry !== 'string') continue;
+    const line = entry.trim();
+    if (line.length === 0) continue;
     const [idRaw, severityRaw] = line.split('=', 2).map((s) => s.trim());
     if (!idRaw || !severityRaw) return null;
     if (!RULE_ID_PATTERN.test(idRaw)) return null;

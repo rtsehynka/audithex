@@ -14,10 +14,11 @@ interface LogLine {
 }
 
 interface ScanRunEvent {
-  type: 'start' | 'discovery' | 'rules' | 'rule' | 'db' | 'persist' | 'done' | 'error';
+  type: 'start' | 'discovery' | 'file' | 'rules' | 'rule' | 'db' | 'persist' | 'done' | 'error';
   phase?: 'begin' | 'end' | 'loaded' | 'table' | 'error';
   project?: string;
   rootPath?: string;
+  relPath?: string;
   totalFiles?: number;
   elapsedMs?: number;
   version?: string;
@@ -189,6 +190,8 @@ function renderEvent(evt: ScanRunEvent): string {
       return evt.phase === 'begin'
         ? 'Discovering files…'
         : `Discovered ${evt.totalFiles ?? 0} files in ${evt.elapsedMs ?? 0} ms`;
+    case 'file':
+      return `[${String(evt.index ?? '?').padStart(4, ' ')}/${evt.total ?? '?'}] checking ${evt.relPath ?? ''}`;
     case 'rules':
       return `Loaded rules pack ${evt.version ?? ''} (${evt.source ?? ''}) — ${evt.total ?? 0} rules`;
     case 'rule':

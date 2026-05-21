@@ -1,4 +1,7 @@
+import { readFileSync } from 'node:fs';
+import { isAbsolute, join } from 'node:path';
 import type {
+  CodeSnippet,
   DiscoveryResult,
   Finding,
   PatternBundle,
@@ -79,6 +82,15 @@ export function runRules(discovery: DiscoveryResult, options: RunRulesOptions = 
     if (override) {
       for (const f of produced) f.severity = override;
     }
+    // Attach a code snippet (±3 lines of context) to every finding
+    // whose file is real and readable. This makes the report show the
+    // actual offending line, not just file:line:col.
+    for (const f of produced) {
+      if (!f.codeSnippet) {
+        const snippet = readSnippet(discovery.rootPath, f.location.file, f.location.line);
+        if (snippet) f.codeSnippet = snippet;
+      }
+    }
     findings.push(...produced);
     if (onProgress) {
       onProgress({ ruleId: rule._id, findings: produced, index: i + 1, total: eligible.length });
@@ -89,4 +101,43 @@ export function runRules(discovery: DiscoveryResult, options: RunRulesOptions = 
 
 export function listBundledRules(): readonly RuleDocument[] {
   return loadBundledRulesPack().rules;
+}
+
+/**
+ * Reads ±SNIPPET_CONTEXT lines around `focusLine` from the source
+ * file the finding points at. Returns null for synthetic locations
+ * (db://…, /not-on-disk, /tmp/…) or any unreadable file — those cases
+ * surface as a missing snippet in the UI, never as a crash.
+ */
+const SNIPPET_CONTEXT = 3;
+const SNIPPET_MAX_LINE_BYTES = 800;
+const snippetCache = new Map<string, string[] | null>();
+
+function readSnippet(
+  rootPath: string,
+  fileRef: string,
+  focusLine: number,
+): CodeSnippet | undefined {
+  if (!fileRef || fileRef.startsWith('db://')) return undefined;
+  const absolute = isAbsolute(fileRef) ? fileRef : join(rootPath, fileRef);
+  let lines = snippetCache.get(absolute);
+  if (lines === undefined) {
+    try {
+      const content = readFileSync(absolute, 'utf8');
+      lines = content.split(/\r?\n/);
+      snippetCache.set(absolute, lines);
+    } catch {
+      snippetCache.set(absolute, null);
+      lines = null;
+    }
+  }
+  if (!lines) return undefined;
+  const focus = Math.max(1, focusLine);
+  const startLine = Math.max(1, focus - SNIPPET_CONTEXT);
+  const endLine = Math.min(lines.length, focus + SNIPPET_CONTEXT);
+  if (startLine > endLine) return undefined;
+  const slice = lines
+    .slice(startLine - 1, endLine)
+    .map((l) => (l.length > SNIPPET_MAX_LINE_BYTES ? `${l.slice(0, SNIPPET_MAX_LINE_BYTES)}…` : l));
+  return { startLine, lines: slice, focusLine: focus };
 }

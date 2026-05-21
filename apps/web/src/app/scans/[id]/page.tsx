@@ -19,9 +19,11 @@ export default async function ScanPage({
   const scan = await getScan(id);
   if (!scan) notFound();
   const conn = await getConnection();
-  const [compareOptions, fixDocs] = await Promise.all([
+  const [compareOptions, fixDocs, llmAvailable, llmProvider] = await Promise.all([
     listComparisonOptions({ excludeId: scan.id }),
     listAiFixesForScan(conn, scan.id),
+    isLlmAvailable(),
+    llmProviderName(),
   ]);
   const cachedFixes: CachedFix[] = fixDocs.map((doc) => ({
     findingKey: doc.findingKey,
@@ -35,8 +37,8 @@ export default async function ScanPage({
       scan={scan}
       sessionEmail={session.email}
       compareOptions={compareOptions}
-      llmAvailable={isLlmAvailable()}
-      llmProvider={llmProviderName()}
+      llmAvailable={llmAvailable}
+      llmProvider={llmProvider}
       cachedFixes={cachedFixes}
     />
   );

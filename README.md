@@ -230,6 +230,35 @@ If a scan runs while Mongo is unreachable, it logs `Could not persist scan to Mo
 
 ---
 
+## Create the local user (superuser)
+
+Audithex is single-user. There is no default account, no seeded password, no "admin/admin". The local user is created by you, once, via the CLI — the credentials are stored in MongoDB as a bcrypt hash and used to log in to the web UI on `/login`.
+
+```bash
+# Requires MONGODB_URI in .env (or exported) — points at the Mongo
+# where the user record will live.
+yarn build
+
+# Interactive — prompts for email and a min-8-character password.
+yarn user:create
+# equivalent: node apps/cli/bin/audithex.js user create
+
+# Non-interactive — pass both up front. Useful for first-run scripts.
+node apps/cli/bin/audithex.js user create --email you@example.com --password 's3cret-pw-1'
+
+# Rotate the password for an existing user (prompts for the new one).
+yarn user:rotate
+# equivalent: node apps/cli/bin/audithex.js user create --force
+```
+
+Exit codes: `0` on success, `2` on misuse (no `MONGODB_URI`, invalid email, password under 8 chars, user already exists without `--force`, or Mongo error).
+
+The credentials never leave your machine. The web UI's session is an HMAC cookie signed with `AUDITHEX_UI_SESSION_SECRET`; the cookie carries the user id + email, not the password.
+
+Once the user exists you can also edit email + password from the UI itself at `/settings/account`.
+
+---
+
 ## Open the local web UI
 
 The web UI is a single-user dashboard on `http://localhost:7777`. Authentication is bcrypt over a Mongo-stored user, sessions are HMAC-signed cookies (no third-party service). It needs both `MONGODB_URI` and `AUDITHEX_UI_SESSION_SECRET` set.
@@ -241,9 +270,10 @@ openssl rand -base64 48 | tr -d '\n'
 # 2. Add it (and MONGODB_URI) to .env, then start MongoDB
 yarn infra:up
 
-# 3. Create the local user (interactive password prompt)
+# 3. Create the local user (interactive password prompt — see the
+#    "Create the local user" section above for the full command list)
 yarn build                                              # build all packages once
-node apps/cli/bin/audithex.js user create               # asks for email + password
+yarn user:create                                        # asks for email + password
 
 # 4. Build the web app and boot the UI
 yarn workspace @audithex/web run build

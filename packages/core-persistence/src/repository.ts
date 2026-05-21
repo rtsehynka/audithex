@@ -3,6 +3,11 @@ import type { Finding, ScanResult, Severity } from '@audithex/core-types';
 import type { Connection } from 'mongoose';
 import { type AiFixDocument, getAiFixModel } from './models/ai-fix.js';
 import {
+  type AiSettingsDocument,
+  type LlmProviderKind,
+  getAiSettingsModel,
+} from './models/ai-settings.js';
+import {
   type ProjectDbConnection,
   type ProjectDocument,
   getProjectModel,
@@ -307,6 +312,8 @@ export interface CreateProjectInput {
   description?: string | null;
   severityOverrides?: ProjectDocument['severityOverrides'];
   disabledRuleIds?: string[];
+  languages?: string[];
+  extraExtensions?: string[];
   dbConnection?: ProjectDbConnection | null;
   dbTables?: string[];
   dbScanAllTables?: boolean;
@@ -327,6 +334,8 @@ export async function createProject(
     description: input.description ?? null,
     severityOverrides: input.severityOverrides ?? {},
     disabledRuleIds: input.disabledRuleIds ?? [],
+    languages: input.languages ?? [],
+    extraExtensions: (input.extraExtensions ?? []).map((e) => e.toLowerCase()),
     dbConnection: input.dbConnection ?? null,
     dbTables: input.dbTables ?? [],
     dbScanAllTables: input.dbScanAllTables ?? false,
@@ -336,6 +345,8 @@ export async function createProject(
     ...doc,
     severityOverrides: doc.severityOverrides ?? {},
     disabledRuleIds: doc.disabledRuleIds ?? [],
+    languages: doc.languages ?? [],
+    extraExtensions: doc.extraExtensions ?? [],
     dbTables: doc.dbTables ?? [],
     dbScanAllTables: doc.dbScanAllTables ?? false,
   };
@@ -377,4 +388,41 @@ export async function deleteProject(connection: Connection, id: string): Promise
   const Model = getProjectModel(connection);
   const result = await Model.deleteOne({ _id: id }).exec();
   return result.deletedCount > 0;
+}
+
+/* --- AI settings ---------------------------------------------------- */
+
+export interface SaveAiSettingsInput {
+  provider: LlmProviderKind;
+  apiKey: string;
+  model: string;
+  costCapUsd: number;
+}
+
+export async function getAiSettings(connection: Connection): Promise<AiSettingsDocument | null> {
+  const Model = getAiSettingsModel(connection);
+  return Model.findById('default').lean<AiSettingsDocument | null>().exec();
+}
+
+export async function saveAiSettings(
+  connection: Connection,
+  input: SaveAiSettingsInput,
+): Promise<AiSettingsDocument> {
+  const Model = getAiSettingsModel(connection);
+  const updated = await Model.findByIdAndUpdate(
+    'default',
+    {
+      $set: {
+        provider: input.provider,
+        apiKey: input.apiKey,
+        model: input.model,
+        costCapUsd: input.costCapUsd,
+      },
+    },
+    { upsert: true, new: true, setDefaultsOnInsert: true },
+  )
+    .lean<AiSettingsDocument | null>()
+    .exec();
+  if (!updated) throw new Error('saveAiSettings: upsert did not return a document');
+  return updated;
 }

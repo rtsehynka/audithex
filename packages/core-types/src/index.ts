@@ -58,6 +58,15 @@ export interface DiscoveryResult {
   artifacts: DiscoveryArtifact[];
 }
 
+export interface CodeSnippet {
+  /** 1-based line number of the first line in `lines`. */
+  startLine: number;
+  /** Raw source lines around the finding (typically ±3 lines of context). */
+  lines: string[];
+  /** 1-based line number that triggered the finding — for highlighting. */
+  focusLine: number;
+}
+
 export interface Finding {
   ruleId: string;
   severity: Severity;
@@ -68,6 +77,12 @@ export interface Finding {
   fixKey: string;
   fixParams?: Record<string, string | number>;
   cwe?: string;
+  /**
+   * Source context around the finding. Populated by the engine when
+   * the file is readable; DB-scan findings emit an empty array since
+   * the "file" is a synthetic row pointer.
+   */
+  codeSnippet?: CodeSnippet;
 }
 
 export interface ScanResult {

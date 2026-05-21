@@ -25,23 +25,27 @@ describe('audithex web — projects CRUD', () => {
     cy.get('[data-testid=rule-row][data-rule-id=R001]').should('exist');
   });
 
-  it('creates a new project, ticking two rules and overriding one severity', () => {
+  it('creates a new project, disabling two rules and overriding one severity', () => {
     cy.signIn();
     cy.visit('/projects/new');
     cy.get('[data-testid=project-name]').type('cypress-acceptance');
     cy.get('[data-testid=project-root-path]').type('/tmp/cypress-acceptance');
     cy.get('[data-testid=project-description]').type('Created by the Cypress orchestrator.');
-    cy.get('[data-testid=rule-row][data-rule-id=R003] [data-testid=rule-disabled]').check();
-    cy.get('[data-testid=rule-row][data-rule-id=R007] [data-testid=rule-disabled]').check();
+    // All rules ship enabled (checked) by default — untick to disable.
+    cy.get('[data-testid=rule-row][data-rule-id=R003] [data-testid=rule-enabled]').uncheck();
+    cy.get('[data-testid=rule-row][data-rule-id=R007] [data-testid=rule-enabled]').uncheck();
     cy.get('[data-testid=rule-row][data-rule-id=R009] [data-testid=rule-override]').select('low');
     cy.get('[data-testid=project-submit]').click();
     cy.location('pathname').should('match', /^\/projects\/[a-f0-9]{24}$/);
     cy.get('[data-testid=project-title]').should('contain', 'cypress-acceptance');
     cy.get('[data-testid=detail-root-path]').should('contain', '/tmp/cypress-acceptance');
-    cy.get('[data-testid=rule-row][data-rule-id=R003] [data-testid=rule-disabled]').should(
-      'be.checked',
+    cy.get('[data-testid=rule-row][data-rule-id=R003] [data-testid=rule-enabled]').should(
+      'not.be.checked',
     );
-    cy.get('[data-testid=rule-row][data-rule-id=R007] [data-testid=rule-disabled]').should(
+    cy.get('[data-testid=rule-row][data-rule-id=R007] [data-testid=rule-enabled]').should(
+      'not.be.checked',
+    );
+    cy.get('[data-testid=rule-row][data-rule-id=R001] [data-testid=rule-enabled]').should(
       'be.checked',
     );
     cy.get('[data-testid=rule-row][data-rule-id=R009] [data-testid=rule-override]').should(
@@ -56,12 +60,13 @@ describe('audithex web — projects CRUD', () => {
     cy.visit('/projects');
     cy.get('[data-testid=project-link]').contains('cypress-acceptance').click();
     cy.get('[data-testid=project-description]').clear().type('Edited by the spec.');
-    cy.get('[data-testid=rule-row][data-rule-id=R003] [data-testid=rule-disabled]').uncheck();
+    // Re-enable the previously-disabled R003 rule.
+    cy.get('[data-testid=rule-row][data-rule-id=R003] [data-testid=rule-enabled]').check();
     cy.get('[data-testid=project-submit]').click();
     cy.get('[data-testid=project-form-saved]').should('exist');
     cy.reload();
-    cy.get('[data-testid=rule-row][data-rule-id=R003] [data-testid=rule-disabled]').should(
-      'not.be.checked',
+    cy.get('[data-testid=rule-row][data-rule-id=R003] [data-testid=rule-enabled]').should(
+      'be.checked',
     );
   });
 

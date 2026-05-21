@@ -21,7 +21,7 @@ const InputSchema = z.object({
 export interface FixActionResult {
   ok: boolean;
   cached: boolean;
-  provider: 'anthropic' | 'dry-run' | 'unconfigured';
+  provider: 'anthropic' | 'openai' | 'gemini' | 'dry-run' | 'unconfigured';
   model: string;
   costUsd: number;
   response: string;
@@ -31,11 +31,13 @@ export interface FixActionResult {
 export async function requestAiFix(raw: unknown): Promise<FixActionResult> {
   await requireSession();
   const parsed = InputSchema.safeParse(raw);
+  const env = loadWebEnv();
+  const provider = await llmProviderName();
   if (!parsed.success) {
     return {
       ok: false,
       cached: false,
-      provider: llmProviderName(),
+      provider,
       model: '',
       costUsd: 0,
       response: '',
@@ -43,10 +45,8 @@ export async function requestAiFix(raw: unknown): Promise<FixActionResult> {
     };
   }
   const { scanId, findingKey } = parsed.data;
-  const env = loadWebEnv();
-  const provider = llmProviderName();
 
-  if (!isLlmAvailable()) {
+  if (!(await isLlmAvailable())) {
     return {
       ok: false,
       cached: false,
@@ -55,7 +55,7 @@ export async function requestAiFix(raw: unknown): Promise<FixActionResult> {
       costUsd: 0,
       response: '',
       error:
-        'ANTHROPIC_API_KEY is not configured. Set it in .env (or AUDITHEX_LLM_DRY_RUN=true for testing).',
+        'No AI provider configured. Set it on /settings/ai or export ANTHROPIC_API_KEY (or AUDITHEX_LLM_DRY_RUN=true for testing).',
     };
   }
 
@@ -97,7 +97,7 @@ export async function requestAiFix(raw: unknown): Promise<FixActionResult> {
     };
   }
 
-  const projected = estimateCostUsd({
+  const projected = await estimateCostUsd({
     ruleId: finding.ruleId,
     severity: finding.severity,
     file: finding.file,
@@ -137,6 +137,16 @@ export async function requestAiFix(raw: unknown): Promise<FixActionResult> {
     };
   }
 
+  if (result.provider === 'unconfigured') {
+    return {
+      ok: true,
+      cached: false,
+      provider: 'unconfigured',
+      model: result.model,
+      costUsd: result.costUsd,
+      response: result.response,
+    };
+  }
   await saveAiFix(conn, {
     scanId,
     findingKey,

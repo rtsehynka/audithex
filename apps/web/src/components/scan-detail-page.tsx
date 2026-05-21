@@ -19,7 +19,7 @@ interface Props {
   sessionEmail: string;
   compareOptions: ScanComparisonOption[];
   llmAvailable: boolean;
-  llmProvider: 'anthropic' | 'dry-run' | 'unconfigured';
+  llmProvider: 'anthropic' | 'openai' | 'gemini' | 'dry-run' | 'unconfigured';
   cachedFixes: CachedFix[];
 }
 
@@ -197,6 +197,30 @@ function SeverityGroup({
               <p className="mt-1 text-[11px] text-[#6b7280]">
                 fix: <span className="text-[#d4d4d4]">{f.fixKey}</span>
               </p>
+              {f.codeSnippet && f.codeSnippet.lines.length > 0 ? (
+                <pre
+                  data-testid="finding-snippet"
+                  className="mt-2 overflow-x-auto rounded border border-[#1f242d] bg-[#0b0e14] p-2 font-mono text-[11px] leading-relaxed text-[#d4d4d4]"
+                >
+                  {f.codeSnippet.lines.map((line, i) => {
+                    const lineNumber = (f.codeSnippet?.startLine ?? 1) + i;
+                    const isFocus = lineNumber === f.codeSnippet?.focusLine;
+                    return (
+                      <div
+                        key={`${f.file}-${lineNumber}`}
+                        className={isFocus ? 'bg-[rgba(239,68,68,0.10)]' : undefined}
+                      >
+                        <span className="mr-3 inline-block w-10 select-none text-right text-[#6b7280]">
+                          {lineNumber}
+                        </span>
+                        <span className={isFocus ? 'text-[#fecaca]' : undefined}>
+                          {line.length === 0 ? ' ' : line}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </pre>
+              ) : null}
               <FindingFixCard
                 scanId={scanId}
                 findingKey={findingKey}

@@ -23,7 +23,7 @@ import { Schema } from 'mongoose';
  * The "scan all tables" toggle is deliberately opt-in: walking every
  * table by default is too much overhead for big production schemas.
  */
-export type DbDriver = 'postgres';
+export type DbDriver = 'postgres' | 'mongodb';
 
 export interface ProjectDbConnection {
   driver: DbDriver;
@@ -38,6 +38,19 @@ export interface ProjectDocument {
   description?: string | null;
   severityOverrides: Record<string, Severity>;
   disabledRuleIds: string[];
+  /**
+   * Language IDs (typescript, python, php, …) the scanner should
+   * include. Empty = include every language the rules pack supports.
+   * Useful for narrowing a polyglot monorepo down to the stack the
+   * project actually uses.
+   */
+  languages: string[];
+  /**
+   * Free-form extra extensions to include beyond what the language
+   * registry knows about (e.g. `.tf`, `.yml`). Includes the leading
+   * dot; lower-cased on persist.
+   */
+  extraExtensions: string[];
   dbConnection?: ProjectDbConnection | null;
   dbTables: string[];
   dbScanAllTables: boolean;
@@ -47,7 +60,7 @@ export interface ProjectDocument {
 
 const DbConnectionSchema = new Schema<ProjectDbConnection>(
   {
-    driver: { type: String, required: true, enum: ['postgres'] satisfies DbDriver[] },
+    driver: { type: String, required: true, enum: ['postgres', 'mongodb'] satisfies DbDriver[] },
     uri: { type: String, required: true },
     database: { type: String, default: null },
   },
@@ -61,6 +74,8 @@ const ProjectSchema = new Schema<ProjectDocument>(
     description: { type: String, default: null },
     severityOverrides: { type: Schema.Types.Mixed, default: {} },
     disabledRuleIds: { type: [String], default: [] },
+    languages: { type: [String], default: [] },
+    extraExtensions: { type: [String], default: [] },
     dbConnection: { type: DbConnectionSchema, default: null },
     dbTables: { type: [String], default: [] },
     dbScanAllTables: { type: Boolean, default: false },

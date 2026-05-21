@@ -33,6 +33,15 @@ export default function SettingsPage({ data, sessionEmail }: Props): ReactElemen
             → Change email or password
           </Link>
         </p>
+        <p className="mt-1 text-xs">
+          <Link
+            href="/settings/ai"
+            data-testid="ai-settings-link"
+            className="text-[#10b981] hover:text-[#f97316]"
+          >
+            → Configure AI provider (Anthropic / OpenAI / Gemini)
+          </Link>
+        </p>
       </header>
 
       <Card title="Audithex" testid="card-audithex">

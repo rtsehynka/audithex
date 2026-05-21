@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "next build",
-    "start": "next start",
-    "dev": "next dev",
+    "start": "node scripts/serve.mjs start",
+    "dev": "node scripts/serve.mjs dev",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "echo 'web tests run through cypress' && exit 0",
     "cypress:run": "cypress run",

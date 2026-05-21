@@ -16,6 +16,7 @@ import { getProjectForUI } from './projects';
 export type ScanRunEvent =
   | { type: 'start'; project: string; rootPath: string }
   | { type: 'discovery'; phase: 'begin' }
+  | { type: 'file'; relPath: string; index: number; total: number }
   | { type: 'discovery'; phase: 'end'; totalFiles: number; elapsedMs: number }
   | { type: 'rules'; phase: 'loaded'; version: string; source: string; total: number }
   | {
@@ -66,7 +67,19 @@ export async function* runProjectScan(projectId: string): AsyncGenerator<ScanRun
 
   yield { type: 'discovery', phase: 'begin' };
   const discoveryStartedAt = Date.now();
-  const discovery = discover({ rootPath: project.rootPath });
+  const fileEvents: ScanRunEvent[] = [];
+  const discovery = discover({
+    rootPath: project.rootPath,
+    onFile: (e) => {
+      fileEvents.push({
+        type: 'file',
+        relPath: e.relPath,
+        index: e.index,
+        total: e.total,
+      });
+    },
+  });
+  for (const evt of fileEvents) yield evt;
   yield {
     type: 'discovery',
     phase: 'end',

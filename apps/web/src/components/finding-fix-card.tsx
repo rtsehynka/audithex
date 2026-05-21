@@ -7,7 +7,7 @@ interface Props {
   scanId: string;
   findingKey: string;
   llmAvailable: boolean;
-  llmProvider: 'anthropic' | 'dry-run' | 'unconfigured';
+  llmProvider: 'anthropic' | 'openai' | 'gemini' | 'dry-run' | 'unconfigured';
   initialFix?: {
     provider: string;
     model: string;

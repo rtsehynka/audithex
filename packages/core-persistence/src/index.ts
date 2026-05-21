@@ -15,6 +15,8 @@ export {
   findAiFix,
   findUserByEmail,
   findUserById,
+  getAiSettings,
+  saveAiSettings,
   getProjectById,
   getProjectByName,
   getScanRunById,
@@ -55,6 +57,11 @@ export {
   type AiFixDocument,
   type LlmProvider,
 } from './models/ai-fix.js';
+export {
+  getAiSettingsModel,
+  type AiSettingsDocument,
+  type LlmProviderKind,
+} from './models/ai-settings.js';
 export {
   getProjectModel,
   type DbDriver,

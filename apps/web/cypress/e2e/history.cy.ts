@@ -37,6 +37,8 @@ describe('audithex web — scan history', () => {
     cy.get('[data-testid=severity-group-high]').should('exist');
     cy.get('[data-testid=finding-row][data-rule-id=R001]').should('exist');
     cy.get('[data-testid=finding-row][data-rule-id=R005]').should('exist');
+    // Code snippet is attached when the file is readable from rootPath.
+    cy.get('[data-testid=finding-snippet]').should('have.length.greaterThan', 0);
     cy.get('[data-testid=back-link]').click();
     cy.location('pathname').should('eq', '/');
   });
