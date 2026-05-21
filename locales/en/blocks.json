@@ -1,0 +1,42 @@
+{
+  "secrets": {
+    "name": "Secrets",
+    "description": "Hardcoded API keys, tokens, database credentials, and other secrets in source code or system prompts.",
+    "rationale": "Leaked secrets in git history can never be unleaked. One commit ruins the rotation cost forever — every collaborator and every CI run since the commit has seen the key, and every fork carries a copy."
+  },
+  "prompt-injection": {
+    "name": "Prompt injection",
+    "description": "Code patterns that let user-controlled strings rewrite the model's behaviour by sneaking into the system prompt without separation.",
+    "rationale": "The textbook attack surface for any LLM app. If untrusted input lands raw inside the prompt, a single 'Ignore previous instructions' message pivots the agent into the attacker's hands."
+  },
+  "system-prompt-leakage": {
+    "name": "System prompt leakage",
+    "description": "System prompts containing credentials, internal URLs, business logic, or PII that should not be reachable through the model.",
+    "rationale": "System prompts are easy to extract with one-line attacks. Anything inside — secrets, internal URLs, business rules — is effectively public the moment the agent goes live."
+  },
+  "tool-design": {
+    "name": "Tool design",
+    "description": "Tool definitions missing descriptions or parameter schemas, accepting raw SQL/shell/paths, or carrying destructive verbs without an approval gate.",
+    "rationale": "Models invoke tools confidently based on their description. A loose or destructive tool definition is a confused-deputy ready to fire — at scale, with no human in the loop."
+  },
+  "output-handling": {
+    "name": "Output handling",
+    "description": "LLM output flowing into eval, file paths, fetch URLs, SQL, or innerHTML without sanitisation — the model's reply becomes attacker-controlled when prompt injection lands.",
+    "rationale": "Model output is attacker-controlled through prompt injection. Anything you would never do to user input — eval it, concatenate it into SQL, render it as HTML — never do to LLM output either."
+  },
+  "supply-chain": {
+    "name": "Supply chain",
+    "description": "Unsafe deserialisation of model weights (pickle, torch.load) and typosquatted LLM-related dependencies that exfiltrate keys at install time.",
+    "rationale": "Loading a pickled model file from an untrusted source is equivalent to running its author's script. Typosquat npm/PyPI packages exfiltrate API keys via postinstall before any of your code runs."
+  },
+  "unbounded-consumption": {
+    "name": "Unbounded consumption",
+    "description": "LLM API calls without an output-token cap, recursive prompts, or token-flood patterns that let one user drain a whole team's budget.",
+    "rationale": "An attacker only needs one input that forces an arbitrarily long output to drain the entire shared token budget. Cost-DoS is cheap for the attacker and expensive for the team."
+  },
+  "dynamic-self-attack": {
+    "name": "Dynamic self-attack",
+    "description": "Live testing of the deployed AI agent: Audithex sends crafted attack prompts to the agent's HTTPS endpoint and grades the responses. Disabled by default — opt-in because each attack consumes paid tokens.",
+    "rationale": "Static analysis finds code that *might* be exploitable. Dynamic testing finds whether the deployed system *actually is*. Both are necessary; neither replaces the other."
+  }
+}

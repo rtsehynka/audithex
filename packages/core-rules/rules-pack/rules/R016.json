@@ -20,7 +20,9 @@
     }
   },
   "messageKey": "findings:R016.message",
+  "rationaleKey": "findings:R016.rationale",
   "fixKey": "findings:R016.fix",
+  "block": "block:tool-design",
   "meta": {
     "title": "Destructive-named tool without an approval gate",
     "category": "excessive-agency",

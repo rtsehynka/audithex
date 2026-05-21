@@ -8,23 +8,26 @@
   "params": {
     "languages": ["typescript", "javascript", "python"],
     "skipComments": true,
+    "requiresAiContext": true,
     "inlinePatterns": [
       {
-        "id": "js-user-input-in-system-prompt",
+        "id": "js-user-input-in-prompt-template",
         "languages": ["typescript", "javascript"],
-        "regex": "`[^`]*(?:[Ss]ystem|[Ii]nstructions?|[Yy]ou are)[^`]*\\$\\{\\s*(?:userInput|userMessage|userQuery|userPrompt|user_input|user_message|input|query|prompt|message|userText)\\s*\\}[^`]*`",
-        "messageParamKind": "user input interpolated into prompt template without boundary tags"
+        "regex": "`[^`]*\\$\\{\\s*(?:userInput|userMessage|userQuery|userPrompt|user_input|user_message|input|query|prompt|message|userText)\\b[^}]*\\}[^`]*`",
+        "messageParamKind": "user-controlled variable interpolated into a template literal inside an AI-context package"
       },
       {
-        "id": "py-user-input-in-system-prompt",
+        "id": "py-user-input-in-prompt-template",
         "languages": ["python"],
-        "regex": "(?:f\"|f')[^\"'\\n]*(?:[Ss]ystem|[Ii]nstructions?|[Yy]ou are)[^\"'\\n]*\\{\\s*(?:user_input|user_message|user_query|user_prompt|input|query|prompt|message)\\s*\\}",
-        "messageParamKind": "f-string user input interpolated into prompt template without boundary tags"
+        "regex": "(?:f\"|f')[^\"'\\n]*\\{\\s*(?:user_input|user_message|user_query|user_prompt|input|query|prompt|message)\\b[^}]*\\}",
+        "messageParamKind": "f-string user-controlled variable interpolated inside an AI-context package"
       }
     ]
   },
   "messageKey": "findings:R011.message",
+  "rationaleKey": "findings:R011.rationale",
   "fixKey": "findings:R011.fix",
+  "block": "block:prompt-injection",
   "meta": {
     "title": "Raw user input interpolated into a system prompt without boundary tags",
     "category": "prompt-injection",

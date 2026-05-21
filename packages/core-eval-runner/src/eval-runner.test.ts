@@ -4,11 +4,14 @@ import { evaluateFixture } from './index.js';
 
 function finding(ruleId: string, file: string, line: number): Finding {
   return {
+    kind: 'static',
     ruleId,
     severity: 'critical',
     owasp: ['LLM06'],
+    blockId: 'block:test',
     location: { file, line },
     messageKey: 'm',
+    rationaleKey: 'r',
     fixKey: 'f',
   };
 }

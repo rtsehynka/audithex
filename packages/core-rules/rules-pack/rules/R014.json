@@ -23,7 +23,9 @@
     ]
   },
   "messageKey": "findings:R014.message",
+  "rationaleKey": "findings:R014.rationale",
   "fixKey": "findings:R014.fix",
+  "block": "block:supply-chain",
   "meta": {
     "title": "Typosquatted LLM-related dependency",
     "category": "supply-chain",

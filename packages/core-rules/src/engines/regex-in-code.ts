@@ -63,7 +63,7 @@ export const regexInCodeEngine: RuleEngine = {
     if (params.requiresAiContext) {
       fileToPackageRoot = computeFileToPackageRoot(ctx.discovery.files, ctx.discovery.rootPath);
       for (const artifact of ctx.discovery.artifacts) {
-        if (artifact.kind !== 'sdk-import') continue;
+        if (artifact.kind !== 'sdk-import' && artifact.kind !== 'llm-call-site') continue;
         const root = fileToPackageRoot.get(artifact.location.file);
         if (root !== undefined) aiContextPackages.add(root);
       }
@@ -108,10 +108,12 @@ export const regexInCodeEngine: RuleEngine = {
             const { line, column } = offsetToLineColumn(content, offset);
             if (isSuppressed(suppressions, line, rule._id)) continue;
             findings.push({
+              kind: 'static',
               ruleId: rule._id,
               severity: rule.severity,
               owasp: rule.owasp,
               ...(rule.cwe ? { cwe: rule.cwe } : {}),
+              blockId: rule.block,
               location: {
                 file: rel,
                 line,
@@ -121,6 +123,7 @@ export const regexInCodeEngine: RuleEngine = {
               },
               messageKey: rule.messageKey,
               messageParams: pattern.messageParams,
+              rationaleKey: rule.rationaleKey,
               fixKey: rule.fixKey,
             });
             perFile += 1;
@@ -136,10 +139,12 @@ export const regexInCodeEngine: RuleEngine = {
           for (const match of line.matchAll(pattern.regex)) {
             const column = (match.index ?? 0) + 1;
             findings.push({
+              kind: 'static',
               ruleId: rule._id,
               severity: rule.severity,
               owasp: rule.owasp,
               ...(rule.cwe ? { cwe: rule.cwe } : {}),
+              blockId: rule.block,
               location: {
                 file: rel,
                 line: i + 1,
@@ -149,6 +154,7 @@ export const regexInCodeEngine: RuleEngine = {
               },
               messageKey: rule.messageKey,
               messageParams: pattern.messageParams,
+              rationaleKey: rule.rationaleKey,
               fixKey: rule.fixKey,
             });
             perFile += 1;

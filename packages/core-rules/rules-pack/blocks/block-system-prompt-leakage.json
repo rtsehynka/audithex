@@ -1,0 +1,11 @@
+{
+  "_id": "block:system-prompt-leakage",
+  "schemaVersion": "0.1",
+  "scanKind": "static",
+  "nameKey": "blocks:system-prompt-leakage.name",
+  "descriptionKey": "blocks:system-prompt-leakage.description",
+  "rationaleKey": "blocks:system-prompt-leakage.rationale",
+  "defaultEnabled": true,
+  "owaspMapping": ["LLM07"],
+  "ruleIds": ["R012"]
+}

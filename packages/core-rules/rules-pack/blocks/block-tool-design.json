@@ -1,0 +1,11 @@
+{
+  "_id": "block:tool-design",
+  "schemaVersion": "0.1",
+  "scanKind": "static",
+  "nameKey": "blocks:tool-design.name",
+  "descriptionKey": "blocks:tool-design.description",
+  "rationaleKey": "blocks:tool-design.rationale",
+  "defaultEnabled": true,
+  "owaspMapping": ["LLM06"],
+  "ruleIds": ["R003", "R004", "R006", "R016"]
+}

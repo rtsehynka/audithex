@@ -41,11 +41,14 @@ afterEach(async () => {
 
 function fakeFinding(severity: Finding['severity'], file: string, line: number): Finding {
   return {
+    kind: 'static',
     ruleId: 'R001',
     severity,
     owasp: ['LLM06'],
+    blockId: 'block:secrets',
     location: { file, line },
     messageKey: 'findings:R001.message',
+    rationaleKey: 'findings:R001.rationale',
     fixKey: 'findings:R001.fix',
   };
 }

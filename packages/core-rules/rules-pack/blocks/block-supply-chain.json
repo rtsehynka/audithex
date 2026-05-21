@@ -1,0 +1,11 @@
+{
+  "_id": "block:supply-chain",
+  "schemaVersion": "0.1",
+  "scanKind": "static",
+  "nameKey": "blocks:supply-chain.name",
+  "descriptionKey": "blocks:supply-chain.description",
+  "rationaleKey": "blocks:supply-chain.rationale",
+  "defaultEnabled": true,
+  "owaspMapping": ["LLM03"],
+  "ruleIds": ["R013", "R014"]
+}

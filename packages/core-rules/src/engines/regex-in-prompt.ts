@@ -36,10 +36,12 @@ export const regexInPromptEngine: RuleEngine = {
         pat.regex.lastIndex = 0;
         for (const match of promptText.matchAll(pat.regex)) {
           findings.push({
+            kind: 'static',
             ruleId: rule._id,
             severity: rule.severity,
             owasp: rule.owasp,
             ...(rule.cwe ? { cwe: rule.cwe } : {}),
+            blockId: rule.block,
             location: {
               file: artifact.location.file,
               line: artifact.location.line,
@@ -50,6 +52,7 @@ export const regexInPromptEngine: RuleEngine = {
               provider: pat.provider,
               patternId: pat.id,
             },
+            rationaleKey: rule.rationaleKey,
             fixKey: rule.fixKey,
           });
           if (pat.regex.lastIndex === (match.index ?? 0)) pat.regex.lastIndex += 1;

@@ -42,7 +42,9 @@
     ]
   },
   "messageKey": "findings:R010.message",
+  "rationaleKey": "findings:R010.rationale",
   "fixKey": "findings:R010.fix",
+  "block": "block:output-handling",
   "meta": {
     "title": "Model or user output written to HTML without sanitization",
     "category": "xss"

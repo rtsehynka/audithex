@@ -21,5 +21,15 @@
     "R015",
     "R016"
   ],
+  "blockIds": [
+    "block:secrets",
+    "block:prompt-injection",
+    "block:system-prompt-leakage",
+    "block:tool-design",
+    "block:output-handling",
+    "block:supply-chain",
+    "block:unbounded-consumption",
+    "block:dynamic-self-attack"
+  ],
   "patternBundleIds": ["secrets-llm-providers-v1", "prompt-leak-indicators-v1"]
 }

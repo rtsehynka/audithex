@@ -44,7 +44,9 @@ describe('scanDatabase (postgres via pg-mem)', () => {
     expect(result.findings).toHaveLength(2);
     expect(result.findings[0]?.ruleId).toBe('R001');
     expect(result.findings[0]?.severity).toBe('critical');
-    expect(result.findings[0]?.location.file).toContain('db://test/public.documents');
+    const f0 = result.findings[0];
+    if (!f0 || f0.kind !== 'static') throw new Error('expected static finding');
+    expect(f0.location.file).toContain('db://test/public.documents');
     expect(result.rowsScanned).toBe(3);
   });
 

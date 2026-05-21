@@ -36,7 +36,9 @@
     ]
   },
   "messageKey": "findings:R006.message",
+  "rationaleKey": "findings:R006.rationale",
   "fixKey": "findings:R006.fix",
+  "block": "block:tool-design",
   "meta": {
     "title": "Unbounded file write operation reachable from tool input",
     "category": "tool-design"

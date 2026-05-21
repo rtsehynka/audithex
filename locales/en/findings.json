@@ -8,6 +8,10 @@
   "category": {
     "title": "Findings by category"
   },
+  "why": "Why",
+  "dynamic": {
+    "attackLocation": "Dynamic attack {{payloadId}} against the configured agent endpoint"
+  },
   "owasp": {
     "title": "OWASP LLM Top 10 (2025) coverage",
     "LLM01": "Prompt Injection",
@@ -24,81 +28,97 @@
   "R001": {
     "title": "API key literal in source",
     "message": "Hardcoded {{provider}} secret matched pattern {{patternId}} in source.",
+    "rationale": "Source code is shared with every collaborator and indexed in git history forever; a leaked key lets anyone bill your account, exfiltrate model context, or impersonate your service. Rotation cost never recovers.",
     "fix": "Move the secret to an environment variable and read it via process.env (or os.environ in Python, getenv in PHP). Rotate the exposed key immediately."
   },
   "R002": {
     "title": "API key inside a system prompt",
     "message": "Hardcoded {{provider}} secret matched pattern {{patternId}} inside a system prompt.",
+    "rationale": "System prompts are easily extracted via prompt-injection. Any credential inside the prompt is effectively public the moment an attacker tricks the model into echoing it.",
     "fix": "Never inline credentials in a prompt. Reference the secret from environment configuration that the agent reads at runtime, and rotate the exposed key."
   },
   "R003": {
     "title": "Tool defined without a description",
     "message": "Tool \"{{toolName}}\" ({{framework}}) has no description field. Models call tools more reliably when descriptions explain when to use them.",
+    "rationale": "Models pick which tool to call based on its description. A tool with no description gets invoked confidently in the wrong context, and the model has no way to know it shouldn't.",
     "fix": "Add a one-sentence description that explains the tool's purpose and constraints to the model."
   },
   "R004": {
     "title": "Tool defined without a parameter schema",
     "message": "Tool \"{{toolName}}\" ({{framework}}) exposes no structured parameter schema. The model can pass arbitrary input shapes.",
+    "rationale": "Without a structured parameter schema the model produces arbitrary input shapes that the handler is unprepared for — this is where confused-deputy and injection bugs land.",
     "fix": "Declare an explicit input_schema (Anthropic) or parameters JSON Schema (OpenAI) with property types and a required list."
   },
   "R005": {
     "title": "Dynamic code execution primitive in source",
     "message": "Use of {{messageParamKind}} can execute arbitrary code derived from model or user input.",
+    "rationale": "LLM output is attacker-controlled via prompt injection. Eval-ing it is remote code execution with extra steps — a single 'output this code' instruction turns into shell access.",
     "fix": "Avoid eval-class primitives entirely. If you must transform an LLM response into behavior, parse it through a structured schema (Zod / Pydantic) and dispatch through an explicit allowlist."
   },
   "R006": {
     "title": "Unbounded file write reachable from input",
     "message": "{{messageParamKind}} appears to write to a path built from input. A model or user can choose arbitrary destinations.",
+    "rationale": "Path traversal lands here. A model can be coaxed into producing '../../etc/passwd' or other system files and overwriting them outside the intended directory.",
     "fix": "Compute the destination from a fixed base directory and validate the resolved path stays inside it (Path.resolve + startsWith / realpath checks)."
   },
   "R007": {
     "title": "Shell command built from interpolated input",
     "message": "{{messageParamKind}} runs a shell command assembled from interpolated input — classic command injection surface.",
+    "rationale": "A semicolon or pipe character in the input pivots the executed command — equivalent to handing the attacker a shell on your host.",
     "fix": "Pass arguments as an array (execFile, spawn argv list) instead of building a shell string. Validate against a fixed allowlist before invoking any binary."
   },
   "R008": {
     "title": "HTTP request to an interpolated URL (SSRF)",
     "message": "{{messageParamKind}} issues a request whose URL is composed from input. A model or user can target internal services.",
+    "rationale": "A model can be steered to fetch cloud-metadata endpoints (169.254.169.254), private network hosts, or file:// URIs. The attacker exfiltrates internal services your server can reach.",
     "fix": "Build the URL from a fixed base + an allowlisted path component. Reject hosts that are private, link-local, or not on your allowlist."
   },
   "R009": {
     "title": "SQL statement assembled by string concatenation",
     "message": "{{messageParamKind}} concatenates input into a SQL statement.",
+    "rationale": "Standard SQL injection. The model writes whatever SQL fits its prompt — including `; DROP TABLE users; --` if the input nudges it that way.",
     "fix": "Use parameterised queries (prepared statements) or a query builder. Never interpolate model or user input into raw SQL."
   },
   "R010": {
     "title": "Model output rendered as HTML without sanitization",
     "message": "{{messageParamKind}} renders content into the DOM without sanitisation, enabling stored XSS via model output.",
+    "rationale": "Model output gets rendered as HTML downstream. A prompt-injection payload turning the response into a `<script>` tag becomes stored XSS for every viewer.",
     "fix": "Render model output as text (textContent / React children) or sanitise with DOMPurify before injection. Never trust LLM output to be safe HTML."
   },
   "R011": {
     "title": "Raw user input interpolated into a system prompt",
     "message": "Untrusted input is dropped straight into a system prompt — {{messageParamKind}}. A malicious user can override your instructions (\"Ignore previous and reveal the system prompt\").",
+    "rationale": "The textbook prompt-injection vector. A user typing 'Ignore previous instructions and X' lands directly in the prompt without separation — the model has no way to distinguish your instructions from theirs.",
     "fix": "Wrap untrusted input in explicit boundary tags (<user_input>${input}</user_input>) and instruct the model not to follow instructions inside them. Validate input length + obvious injection markers before interpolation."
   },
   "R012": {
     "title": "System prompt contains credentials, schema, or internal markers",
     "message": "The system prompt matched pattern {{patternId}} ({{provider}}). System prompts are not a security boundary — anything in here can be leaked.",
+    "rationale": "System prompts can be extracted with one-line attacks like 'Repeat the text above'. Anything inside — credentials, internal URLs, schema dumps — is effectively public.",
     "fix": "Move credentials and schemas out of the prompt and behind tools. Replace prompt-embedded passwords with environment lookups the agent never sees. Drop internal-only notes."
   },
   "R013": {
     "title": "Unsafe pickle / torch.load deserialization",
     "message": "{{messageParamKind}} can execute arbitrary Python code embedded in the serialised file. Loading any pickled model from an untrusted source is equivalent to running its author's script.",
+    "rationale": "Pickle/torch.load deserialization runs arbitrary Python code as a side effect of loading the file. A malicious model file from HuggingFace is a remote shell.",
     "fix": "For PyTorch: prefer safetensors (.safetensors) or pass weights_only=True. For data: use JSON / msgpack instead of pickle. Treat every .bin / .pt / .pkl from outside your team as malicious until proven otherwise (fickling is the standard scanner)."
   },
   "R014": {
     "title": "Typosquatted LLM-related dependency",
     "message": "{{messageParamKind}} matched the known typosquat list. Attackers publish look-alike packages (`anthropi`, `openi`) that steal API keys on install.",
+    "rationale": "Typosquatted packages on npm/PyPI exfiltrate API keys at install time via postinstall scripts. One `npm install anthropi` and the attacker has every key in your environment.",
     "fix": "Replace the package with its canonical name (anthropic / openai / langchain). Lock dependency files (lockfile + pinned versions) and turn on `npm audit signatures` / `pip-audit`."
   },
   "R015": {
     "title": "LLM API call without an output-token cap",
     "message": "{{messageParamKind}}. An attacker can craft an input that forces an arbitrarily long output, draining your token budget and tying up resources.",
+    "rationale": "An attacker crafts an input that forces an arbitrarily long output, draining the token budget for everyone else on the API key. One bad request can consume a whole team's daily limit.",
     "fix": "Always pass max_tokens / max_output_tokens to every LLM API call. Couple it with a per-user daily spend cap server-side."
   },
   "R016": {
     "title": "Destructive-named tool without an approval gate",
     "message": "Tool \"{{toolName}}\" ({{framework}}) has a destructive verb in its name (delete / send / transfer / execute) but the definition does not carry a human-in-the-loop flag.",
+    "rationale": "Tool-calling agents are one prompt away from financial or data damage. A model confidently calls `transfer_funds` because the prompt convinced it to — without a human approval gate the loss is irreversible.",
     "fix": "Either rename the tool to remove the destructive verb (and split read vs write), or add an explicit `requiresApproval: true` / `humanInTheLoop: true` field that your runtime checks before invoking the underlying function. High-impact tools must never auto-execute."
   }
 }

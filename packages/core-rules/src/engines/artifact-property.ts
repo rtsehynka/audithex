@@ -44,13 +44,16 @@ export const artifactPropertyEngine: RuleEngine = {
       if (artifact.kind !== params.artifactKind) continue;
       if (!compiled.matches(artifact)) continue;
       findings.push({
+        kind: 'static',
         ruleId: rule._id,
         severity: rule.severity,
         owasp: rule.owasp,
         ...(rule.cwe ? { cwe: rule.cwe } : {}),
+        blockId: rule.block,
         location: artifact.location,
         messageKey: rule.messageKey,
         messageParams: extractMessageParams(artifact),
+        rationaleKey: rule.rationaleKey,
         fixKey: rule.fixKey,
       });
     }

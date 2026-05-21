@@ -7,6 +7,9 @@ import type { SerializableFinding } from './queries';
  * deterministically.
  */
 export function findingKey(f: SerializableFinding): string {
+  if (f.kind === 'dynamic') {
+    return `${f.ruleId}|dyn|${f.payloadId}`;
+  }
   return `${f.ruleId}|${f.file}|${f.line}`;
 }
 

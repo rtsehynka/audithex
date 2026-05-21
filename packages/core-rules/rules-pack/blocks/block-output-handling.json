@@ -1,0 +1,11 @@
+{
+  "_id": "block:output-handling",
+  "schemaVersion": "0.1",
+  "scanKind": "static",
+  "nameKey": "blocks:output-handling.name",
+  "descriptionKey": "blocks:output-handling.description",
+  "rationaleKey": "blocks:output-handling.rationale",
+  "defaultEnabled": true,
+  "owaspMapping": ["LLM05"],
+  "ruleIds": ["R005", "R007", "R008", "R009", "R010"]
+}

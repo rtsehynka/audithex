@@ -168,27 +168,33 @@ function DiffGroup({
         <p className="px-4 py-6 text-center text-xs text-[#6b7280]">{emptyMessage}</p>
       ) : (
         <ul className="divide-y divide-[#1f242d]">
-          {findings.map((f, index) => (
-            <li
-              key={`${f.ruleId}-${f.file}-${f.line}-${index}`}
-              data-testid="diff-row"
-              data-rule-id={f.ruleId}
-              data-direction={marker}
-              className="px-4 py-3 text-xs"
-            >
-              <div className="flex flex-wrap items-baseline gap-3">
-                <span className="font-mono text-sm text-[#10b981]">
-                  <span className="mr-1 text-[#6b7280]">{marker}</span>
-                  {f.ruleId}
-                </span>
-                <SeverityBadge severity={f.severity} />
-                <code className="text-[#d4d4d4]">
-                  {f.file}:{f.line}
-                </code>
-              </div>
-              <p className="mt-1 text-[11px] text-[#6b7280]">{f.messageKey}</p>
-            </li>
-          ))}
+          {findings.map((f, index) => {
+            const locationLabel =
+              f.kind === 'static' ? `${f.file}:${f.line}` : `dynamic / ${f.payloadId}`;
+            const reactKey =
+              f.kind === 'static'
+                ? `${f.ruleId}-${f.file}-${f.line}-${index}`
+                : `${f.ruleId}-${f.payloadId}-${index}`;
+            return (
+              <li
+                key={reactKey}
+                data-testid="diff-row"
+                data-rule-id={f.ruleId}
+                data-direction={marker}
+                className="px-4 py-3 text-xs"
+              >
+                <div className="flex flex-wrap items-baseline gap-3">
+                  <span className="font-mono text-sm text-[#10b981]">
+                    <span className="mr-1 text-[#6b7280]">{marker}</span>
+                    {f.ruleId}
+                  </span>
+                  <SeverityBadge severity={f.severity} />
+                  <code className="text-[#d4d4d4]">{locationLabel}</code>
+                </div>
+                <p className="mt-1 text-[11px] text-[#6b7280]">{f.messageKey}</p>
+              </li>
+            );
+          })}
         </ul>
       )}
     </section>

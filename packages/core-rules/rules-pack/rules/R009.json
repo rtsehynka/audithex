@@ -42,7 +42,9 @@
     ]
   },
   "messageKey": "findings:R009.message",
+  "rationaleKey": "findings:R009.rationale",
   "fixKey": "findings:R009.fix",
+  "block": "block:output-handling",
   "meta": {
     "title": "SQL statement built by string concatenation",
     "category": "sql-injection"

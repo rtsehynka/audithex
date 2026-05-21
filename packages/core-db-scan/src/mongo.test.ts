@@ -54,7 +54,9 @@ describe('scanDatabase — mongodb driver', () => {
     expect(result.findings).toHaveLength(2);
     expect(result.findings[0]?.ruleId).toBe('R001');
     expect(result.findings[0]?.severity).toBe('critical');
-    expect(result.findings[0]?.location.file).toMatch(/db:\/\/rag\/documents\?id=.+field=body/);
+    const f0 = result.findings[0];
+    if (!f0 || f0.kind !== 'static') throw new Error('expected static finding');
+    expect(f0.location.file).toMatch(/db:\/\/rag\/documents\?id=.+field=body/);
     expect(result.rowsScanned).toBe(3);
   });
 

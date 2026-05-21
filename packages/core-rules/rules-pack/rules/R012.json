@@ -9,7 +9,9 @@
     "patternTagWhitelist": ["prompt-leak"]
   },
   "messageKey": "findings:R012.message",
+  "rationaleKey": "findings:R012.rationale",
   "fixKey": "findings:R012.fix",
+  "block": "block:system-prompt-leakage",
   "meta": {
     "title": "System prompt contains credentials, internal markers, or schema dump",
     "category": "system-prompt-leakage",

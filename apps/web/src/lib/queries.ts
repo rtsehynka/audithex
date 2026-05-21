@@ -34,23 +34,43 @@ export interface ScanRunDetail extends ScanRunSummary {
   findings: SerializableFinding[];
 }
 
-export interface SerializableFinding {
+export interface SerializableFindingBase {
   ruleId: string;
   severity: ScanRunDocument['findings'][number]['severity'];
   owasp: string[];
   cwe?: string;
+  blockId: string;
+  messageKey: string;
+  messageParams?: Record<string, string | number>;
+  rationaleKey: string;
+  rationaleParams?: Record<string, string | number>;
+  fixKey: string;
+}
+
+export interface SerializableStaticFinding extends SerializableFindingBase {
+  kind: 'static';
   file: string;
   line: number;
   column?: number;
-  messageKey: string;
-  messageParams?: Record<string, string | number>;
-  fixKey: string;
   codeSnippet?: {
     startLine: number;
     focusLine: number;
     lines: string[];
   };
 }
+
+export interface SerializableDynamicFinding extends SerializableFindingBase {
+  kind: 'dynamic';
+  payloadId: string;
+  payloadCategory: string;
+  prompt: string;
+  response: string;
+  judgeReason: string;
+  tokensUsed?: { input: number; output: number };
+  costUsd?: number;
+}
+
+export type SerializableFinding = SerializableStaticFinding | SerializableDynamicFinding;
 
 export interface SeverityCounts {
   critical: number;
@@ -139,28 +159,69 @@ export async function getScan(id: string): Promise<ScanRunDetail | null> {
     audithexVersion: doc.audithexVersion,
     fingerprint: doc.fingerprint,
     discovery: doc.discovery,
-    findings: doc.findings.map((f) => {
-      const snippet = f.codeSnippet
-        ? {
-            startLine: f.codeSnippet.startLine,
-            focusLine: f.codeSnippet.focusLine,
-            lines: [...f.codeSnippet.lines],
-          }
-        : reReadSnippet(doc.rootPath, f.location.file, f.location.line);
-      return {
-        ruleId: f.ruleId,
-        severity: f.severity,
-        owasp: [...f.owasp],
-        ...(f.cwe ? { cwe: f.cwe } : {}),
-        file: f.location.file,
-        line: f.location.line,
-        ...(typeof f.location.column === 'number' ? { column: f.location.column } : {}),
-        messageKey: f.messageKey,
-        ...(f.messageParams ? { messageParams: { ...f.messageParams } } : {}),
-        fixKey: f.fixKey,
-        ...(snippet ? { codeSnippet: snippet } : {}),
-      };
+    findings: doc.findings.map((f): SerializableFinding => {
+      // The Mongoose schema stores both static- and dynamic-only fields
+      // side-by-side on the same subdoc. Pre-block-model rows have no
+      // `kind` → the schema default fills 'static'. We narrow first, then
+      // build the right shape.
+      if (f.kind === 'dynamic') {
+        return mapDynamic(f);
+      }
+      return mapStatic(f, doc.rootPath);
     }),
+  };
+}
+
+function mapDynamic(f: import('@audithex/core-types').DynamicFinding): SerializableDynamicFinding {
+  return {
+    kind: 'dynamic',
+    ruleId: f.ruleId,
+    severity: f.severity,
+    owasp: [...f.owasp],
+    ...(f.cwe ? { cwe: f.cwe } : {}),
+    blockId: f.blockId,
+    payloadId: f.payloadId,
+    payloadCategory: f.payloadCategory,
+    prompt: f.prompt,
+    response: f.response,
+    judgeReason: f.judgeReason,
+    ...(f.tokensUsed ? { tokensUsed: { ...f.tokensUsed } } : {}),
+    ...(typeof f.costUsd === 'number' ? { costUsd: f.costUsd } : {}),
+    messageKey: f.messageKey,
+    ...(f.messageParams ? { messageParams: { ...f.messageParams } } : {}),
+    rationaleKey: f.rationaleKey,
+    ...(f.rationaleParams ? { rationaleParams: { ...f.rationaleParams } } : {}),
+    fixKey: f.fixKey,
+  };
+}
+
+function mapStatic(
+  f: import('@audithex/core-types').StaticFinding,
+  rootPath: string,
+): SerializableStaticFinding {
+  const snippet = f.codeSnippet
+    ? {
+        startLine: f.codeSnippet.startLine,
+        focusLine: f.codeSnippet.focusLine,
+        lines: [...f.codeSnippet.lines],
+      }
+    : reReadSnippet(rootPath, f.location.file, f.location.line);
+  return {
+    kind: 'static',
+    ruleId: f.ruleId,
+    severity: f.severity,
+    owasp: [...f.owasp],
+    ...(f.cwe ? { cwe: f.cwe } : {}),
+    blockId: f.blockId,
+    file: f.location.file,
+    line: f.location.line,
+    ...(typeof f.location.column === 'number' ? { column: f.location.column } : {}),
+    messageKey: f.messageKey,
+    ...(f.messageParams ? { messageParams: { ...f.messageParams } } : {}),
+    rationaleKey: f.rationaleKey,
+    ...(f.rationaleParams ? { rationaleParams: { ...f.rationaleParams } } : {}),
+    fixKey: f.fixKey,
+    ...(snippet ? { codeSnippet: snippet } : {}),
   };
 }
 

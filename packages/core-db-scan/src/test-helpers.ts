@@ -1,4 +1,4 @@
-import type { PatternBundle, RuleDocument, RulesPack } from '@audithex/core-types';
+import type { BlockDocument, PatternBundle, RuleDocument, RulesPack } from '@audithex/core-types';
 import { expect } from 'vitest';
 
 export interface CapturedProgressEvent {
@@ -72,7 +72,19 @@ export function makeTestRulesPack(): RulesPack {
     engine: 'regex-in-code',
     params: { patternBundle: 'secrets-test' },
     messageKey: 'findings:R001.message',
+    rationaleKey: 'findings:R001.rationale',
     fixKey: 'findings:R001.fix',
+    block: 'block:secrets',
+  };
+  const block: BlockDocument = {
+    _id: 'block:secrets',
+    schemaVersion: '0.1',
+    scanKind: 'static',
+    nameKey: 'blocks:secrets.name',
+    descriptionKey: 'blocks:secrets.description',
+    rationaleKey: 'blocks:secrets.rationale',
+    defaultEnabled: true,
+    ruleIds: ['R001'],
   };
   return {
     manifest: {
@@ -81,10 +93,12 @@ export function makeTestRulesPack(): RulesPack {
       version: '0.0.0-inline',
       releasedAt: '2026-01-01T00:00:00Z',
       ruleIds: ['R001'],
+      blockIds: ['block:secrets'],
       patternBundleIds: ['secrets-test'],
     },
     rules: [rule],
     patternBundles: [bundle],
+    blocks: [block],
     source: 'bundled',
     rootPath: '/inline',
   } as RulesPack;

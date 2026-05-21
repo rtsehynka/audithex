@@ -1,0 +1,11 @@
+{
+  "_id": "block:prompt-injection",
+  "schemaVersion": "0.1",
+  "scanKind": "static",
+  "nameKey": "blocks:prompt-injection.name",
+  "descriptionKey": "blocks:prompt-injection.description",
+  "rationaleKey": "blocks:prompt-injection.rationale",
+  "defaultEnabled": true,
+  "owaspMapping": ["LLM01"],
+  "ruleIds": ["R011"]
+}

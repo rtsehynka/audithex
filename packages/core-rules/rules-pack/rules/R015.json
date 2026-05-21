@@ -46,7 +46,9 @@
     ]
   },
   "messageKey": "findings:R015.message",
+  "rationaleKey": "findings:R015.rationale",
   "fixKey": "findings:R015.fix",
+  "block": "block:unbounded-consumption",
   "meta": {
     "title": "LLM API call without an output-token cap",
     "category": "unbounded-consumption",

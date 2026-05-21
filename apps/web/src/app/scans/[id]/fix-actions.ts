@@ -84,8 +84,10 @@ export async function requestAiFix(raw: unknown): Promise<FixActionResult> {
       error: 'Scan not found.',
     };
   }
-  const finding = scan.findings.find((f) => `${f.ruleId}|${f.file}|${f.line}` === findingKey);
-  if (!finding) {
+  const finding = scan.findings.find(
+    (f) => f.kind === 'static' && `${f.ruleId}|${f.file}|${f.line}` === findingKey,
+  );
+  if (!finding || finding.kind !== 'static') {
     return {
       ok: false,
       cached: false,

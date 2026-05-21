@@ -80,12 +80,27 @@ function asciiScan(scan: ScanRunDetail): ScanRunDetail {
     rulesVersion: toAscii(scan.rulesVersion),
     audithexVersion: toAscii(scan.audithexVersion),
     fingerprint: toAscii(scan.fingerprint),
-    findings: scan.findings.map((f) => ({
-      ...f,
-      file: toAscii(f.file),
-      messageKey: toAscii(f.messageKey),
-      ...(f.cwe ? { cwe: toAscii(f.cwe) } : {}),
-    })),
+    findings: scan.findings.map((f) =>
+      f.kind === 'dynamic'
+        ? {
+            ...f,
+            payloadId: toAscii(f.payloadId),
+            payloadCategory: toAscii(f.payloadCategory),
+            prompt: toAscii(f.prompt),
+            response: toAscii(f.response),
+            judgeReason: toAscii(f.judgeReason),
+            messageKey: toAscii(f.messageKey),
+            rationaleKey: toAscii(f.rationaleKey),
+            ...(f.cwe ? { cwe: toAscii(f.cwe) } : {}),
+          }
+        : {
+            ...f,
+            file: toAscii(f.file),
+            messageKey: toAscii(f.messageKey),
+            rationaleKey: toAscii(f.rationaleKey),
+            ...(f.cwe ? { cwe: toAscii(f.cwe) } : {}),
+          },
+    ),
   };
 }
 
@@ -158,31 +173,38 @@ function ScanReportDocument({
                 <Text style={styles.sectionTitle}>
                   {severity.toUpperCase()} ({findings.length})
                 </Text>
-                {findings.map((f, index) => (
-                  <View
-                    key={`${f.ruleId}-${f.file}-${f.line}-${index}`}
-                    style={styles.findingRow}
-                    wrap={false}
-                  >
-                    <View style={styles.findingHeader}>
-                      <Text style={styles.ruleId}>{f.ruleId}</Text>
-                      <Text style={[styles.badge, severityStyle(severity)]}>
-                        {severity.toUpperCase()}
+                {findings.map((f, index) => {
+                  const locationLabel =
+                    f.kind === 'static' ? `${f.file}:${f.line}` : `dynamic / ${f.payloadId}`;
+                  const fixKey =
+                    f.kind === 'static'
+                      ? `${f.ruleId}|${f.file}|${f.line}`
+                      : `${f.ruleId}|dyn|${f.payloadId}`;
+                  const reactKey =
+                    f.kind === 'static'
+                      ? `${f.ruleId}-${f.file}-${f.line}-${index}`
+                      : `${f.ruleId}-${f.payloadId}-${index}`;
+                  return (
+                    <View key={reactKey} style={styles.findingRow} wrap={false}>
+                      <View style={styles.findingHeader}>
+                        <Text style={styles.ruleId}>{f.ruleId}</Text>
+                        <Text style={[styles.badge, severityStyle(severity)]}>
+                          {severity.toUpperCase()}
+                        </Text>
+                        <Text style={styles.location}>{locationLabel}</Text>
+                        {fixSet.has(fixKey) ? (
+                          <Text style={[styles.badge, styles.badgeLow]}>AI FIX CACHED</Text>
+                        ) : null}
+                      </View>
+                      <Text style={styles.message}>
+                        {f.messageKey}
+                        {f.owasp.length > 0 ? ` | OWASP ${f.owasp.join(', ')}` : ''}
+                        {f.cwe ? ` | ${f.cwe}` : ''}
                       </Text>
-                      <Text style={styles.location}>
-                        {f.file}:{f.line}
-                      </Text>
-                      {fixSet.has(`${f.ruleId}|${f.file}|${f.line}`) ? (
-                        <Text style={[styles.badge, styles.badgeLow]}>AI FIX CACHED</Text>
-                      ) : null}
+                      <Text style={styles.message}>Why: {f.rationaleKey}</Text>
                     </View>
-                    <Text style={styles.message}>
-                      {f.messageKey}
-                      {f.owasp.length > 0 ? ` | OWASP ${f.owasp.join(', ')}` : ''}
-                      {f.cwe ? ` | ${f.cwe}` : ''}
-                    </Text>
-                  </View>
-                ))}
+                  );
+                })}
               </View>
             );
           })

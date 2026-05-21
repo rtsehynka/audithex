@@ -42,7 +42,9 @@
     ]
   },
   "messageKey": "findings:R007.message",
+  "rationaleKey": "findings:R007.rationale",
   "fixKey": "findings:R007.fix",
+  "block": "block:output-handling",
   "meta": {
     "title": "Shell command built from interpolated input",
     "category": "command-injection"

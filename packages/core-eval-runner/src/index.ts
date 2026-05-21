@@ -45,6 +45,11 @@ export const DEFAULT_THRESHOLDS: EvaluationThresholds = {
 
 function findingMatches(expected: ExpectedFinding, actual: Finding): boolean {
   if (expected.ruleId !== actual.ruleId) return false;
+  // Dynamic findings have no file/line — they match by ruleId alone.
+  // The expected fixture for a dynamic finding leaves `file` empty.
+  if (actual.kind !== 'static') {
+    return expected.file === '' || expected.file === undefined;
+  }
   if (expected.file !== actual.location.file) return false;
   if (expected.line !== undefined && expected.line !== actual.location.line) return false;
   return true;

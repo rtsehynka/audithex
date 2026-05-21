@@ -1,0 +1,11 @@
+{
+  "_id": "block:unbounded-consumption",
+  "schemaVersion": "0.1",
+  "scanKind": "static",
+  "nameKey": "blocks:unbounded-consumption.name",
+  "descriptionKey": "blocks:unbounded-consumption.description",
+  "rationaleKey": "blocks:unbounded-consumption.rationale",
+  "defaultEnabled": true,
+  "owaspMapping": ["LLM10"],
+  "ruleIds": ["R015"]
+}

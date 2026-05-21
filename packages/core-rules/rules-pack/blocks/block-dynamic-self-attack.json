@@ -1,0 +1,11 @@
+{
+  "_id": "block:dynamic-self-attack",
+  "schemaVersion": "0.1",
+  "scanKind": "dynamic",
+  "nameKey": "blocks:dynamic-self-attack.name",
+  "descriptionKey": "blocks:dynamic-self-attack.description",
+  "rationaleKey": "blocks:dynamic-self-attack.rationale",
+  "defaultEnabled": false,
+  "owaspMapping": ["LLM01", "LLM02", "LLM05", "LLM07", "LLM08", "LLM10"],
+  "ruleIds": []
+}

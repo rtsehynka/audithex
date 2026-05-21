@@ -47,7 +47,12 @@ export function renderConsole(result: ScanResult): string {
       const owasp = f.owasp.join(', ');
       const message = t(f.messageKey, f.messageParams);
       lines.push(`  ${f.ruleId}  ${owasp}  ${message}`);
-      lines.push(`    ${f.location.file}:${f.location.line}`);
+      if (f.kind === 'static') {
+        lines.push(`    ${f.location.file}:${f.location.line}`);
+      } else {
+        lines.push(`    ${t('findings:dynamic.attackLocation', { payloadId: f.payloadId })}`);
+      }
+      lines.push(`    ${t('findings:why')}: ${t(f.rationaleKey, f.rationaleParams)}`);
     }
     lines.push('');
   }
@@ -82,7 +87,13 @@ export function renderMarkdown(result: ScanResult): string {
       lines.push(`### ${f.ruleId} — ${t(f.messageKey, f.messageParams)}`);
       lines.push(`- OWASP: ${f.owasp.join(', ')}`);
       if (f.cwe) lines.push(`- CWE: ${f.cwe}`);
-      lines.push(`- Location: \`${f.location.file}:${f.location.line}\``);
+      if (f.kind === 'static') {
+        lines.push(`- Location: \`${f.location.file}:${f.location.line}\``);
+      } else {
+        lines.push(`- ${t('findings:dynamic.attackLocation', { payloadId: f.payloadId })}`);
+      }
+      lines.push('');
+      lines.push(`**${t('findings:why')}:** ${t(f.rationaleKey, f.rationaleParams)}`);
       lines.push('');
       lines.push(`> ${t(f.fixKey, f.fixParams)}`);
       lines.push('');

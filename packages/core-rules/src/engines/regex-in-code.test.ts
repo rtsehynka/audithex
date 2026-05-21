@@ -61,7 +61,9 @@ function makeFetchRule(extra: Record<string, unknown> = {}): RuleDocument {
       ],
     },
     messageKey: 'findings:R008.message',
+    rationaleKey: 'findings:R008.rationale',
     fixKey: 'findings:R008.fix',
+    block: 'block:output-handling',
   };
 }
 
@@ -97,7 +99,9 @@ describe('regexInCodeEngine', () => {
       const ctx = makeContext(root, files, [sdkImportArtifact('src/llm-call.ts')]);
       const findings = regexInCodeEngine.evaluate(makeFetchRule({ requiresAiContext: true }), ctx);
       expect(findings).toHaveLength(1);
-      expect(findings[0]?.location.file).toBe('src/tools/http.ts');
+      const first = findings[0];
+      if (!first || first.kind !== 'static') throw new Error('expected static finding');
+      expect(first.location.file).toBe('src/tools/http.ts');
     });
 
     it('skips packages that do not contain any sdk-import artifact', () => {

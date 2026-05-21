@@ -12,6 +12,7 @@ const NAMESPACES = [
   'cli',
   'scan',
   'findings',
+  'blocks',
   'update',
   'selftest',
   'history',

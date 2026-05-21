@@ -103,37 +103,70 @@ describe('rules-pack end-to-end across R001-R010', () => {
     expect(findings).toHaveLength(1);
   });
 
+  // R005/R007/R009/R010 are LLM05 rules with `requiresAiContext: true` —
+  // they fire only inside packages that contain at least one sdk-import
+  // artifact. The test fixtures below add a package.json + an sdk-import
+  // so the AI-context gate is satisfied.
+  function aiContextArtifact(file: string): DiscoveryArtifact {
+    return {
+      kind: 'sdk-import',
+      confidence: 'ast',
+      location: { file, line: 1, column: 1 },
+      detail: { provider: 'anthropic', importPath: '@anthropic-ai/sdk' },
+    };
+  }
+
   it('R005 fires on eval in TypeScript and exec in Python', () => {
+    writeFileSync(join(root, 'package.json'), '{"name":"ai-app"}\n');
+    writeFileSync(join(root, 'src', 'llm.ts'), "import Anthropic from '@anthropic-ai/sdk';\n");
     writeFileSync(join(root, 'src', 'a.ts'), 'eval("dangerous");\n');
     writeFileSync(join(root, 'a.py'), 'exec(payload)\n');
-    const findings = runRules(discoveryFor(['src/a.ts', 'a.py']), {
-      rulesPack: pack,
-      ruleIds: ['R005'],
-    });
+    const findings = runRules(
+      discoveryFor(
+        ['package.json', 'src/llm.ts', 'src/a.ts', 'a.py'],
+        [aiContextArtifact('src/llm.ts')],
+      ),
+      { rulesPack: pack, ruleIds: ['R005'] },
+    );
     expect(findings.length).toBeGreaterThanOrEqual(2);
   });
 
   it('R007 fires on PHP shell_exec with $variable', () => {
+    writeFileSync(join(root, 'package.json'), '{"name":"ai-app"}\n');
+    writeFileSync(join(root, 'src', 'llm.ts'), "import Anthropic from '@anthropic-ai/sdk';\n");
     writeFileSync(join(root, 'a.php'), '<?php\nshell_exec($cmd);\n');
-    const findings = runRules(discoveryFor(['a.php']), { rulesPack: pack, ruleIds: ['R007'] });
+    const findings = runRules(
+      discoveryFor(['package.json', 'src/llm.ts', 'a.php'], [aiContextArtifact('src/llm.ts')]),
+      { rulesPack: pack, ruleIds: ['R007'] },
+    );
     expect(findings.length).toBeGreaterThanOrEqual(1);
   });
 
   it('R009 fires on a SQL template literal interpolation in TS', () => {
+    writeFileSync(join(root, 'package.json'), '{"name":"ai-app"}\n');
+    writeFileSync(join(root, 'src', 'llm.ts'), "import Anthropic from '@anthropic-ai/sdk';\n");
     writeFileSync(join(root, 'src', 'q.ts'), 'const q = `SELECT * FROM users WHERE id = ${id}`;\n');
-    const findings = runRules(discoveryFor(['src/q.ts']), { rulesPack: pack, ruleIds: ['R009'] });
+    const findings = runRules(
+      discoveryFor(['package.json', 'src/llm.ts', 'src/q.ts'], [aiContextArtifact('src/llm.ts')]),
+      { rulesPack: pack, ruleIds: ['R009'] },
+    );
     expect(findings.length).toBeGreaterThanOrEqual(1);
   });
 
   it('R010 fires on a React dangerouslySetInnerHTML', () => {
+    writeFileSync(join(root, 'package.json'), '{"name":"ai-app"}\n');
+    writeFileSync(join(root, 'src', 'llm.ts'), "import Anthropic from '@anthropic-ai/sdk';\n");
     writeFileSync(
       join(root, 'src', 'comp.tsx'),
       'export const C = ({ html }) => <div dangerouslySetInnerHTML={{ __html: html }} />;\n',
     );
-    const findings = runRules(discoveryFor(['src/comp.tsx']), {
-      rulesPack: pack,
-      ruleIds: ['R010'],
-    });
+    const findings = runRules(
+      discoveryFor(
+        ['package.json', 'src/llm.ts', 'src/comp.tsx'],
+        [aiContextArtifact('src/llm.ts')],
+      ),
+      { rulesPack: pack, ruleIds: ['R010'] },
+    );
     expect(findings.length).toBeGreaterThanOrEqual(1);
   });
 

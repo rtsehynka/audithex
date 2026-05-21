@@ -36,7 +36,9 @@
     ]
   },
   "messageKey": "findings:R008.message",
+  "rationaleKey": "findings:R008.rationale",
   "fixKey": "findings:R008.fix",
+  "block": "block:output-handling",
   "meta": {
     "title": "HTTP request built from interpolated input (potential SSRF)",
     "category": "ssrf"

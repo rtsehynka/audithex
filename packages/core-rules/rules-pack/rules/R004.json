@@ -9,7 +9,9 @@
     "predicate": { "field": "detail.hasSchema", "equals": false }
   },
   "messageKey": "findings:R004.message",
+  "rationaleKey": "findings:R004.rationale",
   "fixKey": "findings:R004.fix",
+  "block": "block:tool-design",
   "meta": {
     "title": "Tool defined without a structured parameter schema",
     "category": "tool-design"

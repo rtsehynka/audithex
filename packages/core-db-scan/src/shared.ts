@@ -69,10 +69,12 @@ export function matchValueIntoFindings(args: {
     const match = sr.compiled.exec(args.value);
     if (!match) continue;
     args.out.push({
+      kind: 'static',
       ruleId: sr.rule._id,
       severity: sr.rule.severity as Severity,
       owasp: [...sr.rule.owasp] as OwaspLLMCategory[],
       ...(sr.rule.cwe ? { cwe: sr.rule.cwe } : {}),
+      blockId: sr.rule.block,
       location: {
         file: args.locationFile,
         line: args.positionIndex,
@@ -83,6 +85,7 @@ export function matchValueIntoFindings(args: {
         provider: sr.pattern.provider,
         patternId: sr.pattern.id,
       },
+      rationaleKey: sr.rule.rationaleKey,
       fixKey: sr.rule.fixKey,
     });
   }

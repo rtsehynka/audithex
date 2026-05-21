@@ -10,7 +10,9 @@
     "patternTagWhitelist": ["llm", "high-confidence", "cloud"]
   },
   "messageKey": "findings:R002.message",
+  "rationaleKey": "findings:R002.rationale",
   "fixKey": "findings:R002.fix",
+  "block": "block:secrets",
   "meta": {
     "title": "Hardcoded API key inside a system prompt",
     "category": "secrets-in-prompts"

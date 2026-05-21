@@ -172,11 +172,18 @@ function SeverityGroup({
       </header>
       <ul className="divide-y divide-[#1f242d]">
         {findings.map((f, index) => {
-          const findingKey = `${f.ruleId}|${f.file}|${f.line}`;
+          const findingKey =
+            f.kind === 'static'
+              ? `${f.ruleId}|${f.file}|${f.line}`
+              : `${f.ruleId}|dyn|${f.payloadId}`;
           const cached = fixByKey.get(findingKey) ?? null;
+          const reactKey =
+            f.kind === 'static'
+              ? `${f.ruleId}-${f.file}-${f.line}-${index}`
+              : `${f.ruleId}-${f.payloadId}-${index}`;
           return (
             <li
-              key={`${f.ruleId}-${f.file}-${f.line}-${index}`}
+              key={reactKey}
               data-testid="finding-row"
               data-rule-id={f.ruleId}
               className="px-4 py-3 text-xs"
@@ -186,8 +193,9 @@ function SeverityGroup({
                 <span className="text-[#6b7280]">{f.owasp.join(', ') || '—'}</span>
                 {f.cwe ? <span className="text-[#6b7280]">{f.cwe}</span> : null}
                 <code className="text-[#d4d4d4]">
-                  {f.file}:{f.line}
-                  {typeof f.column === 'number' ? `:${f.column}` : ''}
+                  {f.kind === 'static'
+                    ? `${f.file}:${f.line}${typeof f.column === 'number' ? `:${f.column}` : ''}`
+                    : `dynamic / ${f.payloadId}`}
                 </code>
               </div>
               <p className="mt-1 text-[11px] text-[#6b7280]">
@@ -195,16 +203,21 @@ function SeverityGroup({
                 {f.messageParams ? ` — ${formatParams(f.messageParams)}` : null}
               </p>
               <p className="mt-1 text-[11px] text-[#6b7280]">
+                why: <span className="text-[#d4d4d4]">{f.rationaleKey}</span>
+              </p>
+              <p className="mt-1 text-[11px] text-[#6b7280]">
                 fix: <span className="text-[#d4d4d4]">{f.fixKey}</span>
               </p>
-              {f.codeSnippet && f.codeSnippet.lines.length > 0 ? (
+              {f.kind === 'static' && f.codeSnippet && f.codeSnippet.lines.length > 0 ? (
                 <pre
                   data-testid="finding-snippet"
                   className="mt-2 overflow-x-auto rounded border border-[#1f242d] bg-[#0b0e14] p-2 font-mono text-[11px] leading-relaxed text-[#d4d4d4]"
                 >
-                  {f.codeSnippet.lines.map((line, i) => {
-                    const lineNumber = (f.codeSnippet?.startLine ?? 1) + i;
-                    const isFocus = lineNumber === f.codeSnippet?.focusLine;
+                  {f.codeSnippet.lines.map((line: string, i: number) => {
+                    const snippet = f.codeSnippet;
+                    if (!snippet) return null;
+                    const lineNumber = snippet.startLine + i;
+                    const isFocus = lineNumber === snippet.focusLine;
                     return (
                       <div
                         key={`${f.file}-${lineNumber}`}

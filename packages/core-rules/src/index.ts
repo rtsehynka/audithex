@@ -56,6 +56,13 @@ export interface RunRulesOptions {
    */
   disabledOwaspGroups?: readonly string[];
   /**
+   * Block IDs the project has turned off. Disabling a block skips
+   * every rule that belongs to it — the coarsest and most efficient
+   * filter layer. Composes with logical OR against the other filters:
+   * a rule is skipped if disabled by ANY layer.
+   */
+  disabledBlockIds?: readonly string[];
+  /**
    * Optional sync callback fired after each rule executes. Used by the
    * web UI's live scan stream to emit per-rule progress over SSE.
    * Throwing here aborts the run — runRules does not catch.
@@ -71,6 +78,14 @@ export function runRules(discovery: DiscoveryResult, options: RunRulesOptions = 
   const filter = options.ruleIds ? new Set(options.ruleIds) : null;
   const disabled = options.disabledRuleIds ? new Set(options.disabledRuleIds) : null;
   const disabledGroups = options.disabledOwaspGroups ? new Set(options.disabledOwaspGroups) : null;
+  const disabledBlocks = options.disabledBlockIds ? new Set(options.disabledBlockIds) : null;
+  // Effective disabled-blocks: project's explicit list + any block with
+  // defaultEnabled === false that the project has not explicitly enabled
+  // (e.g. block:dynamic-self-attack). Static runRules treats opt-in
+  // blocks as off unless the project has cleared the disable list for
+  // them — but for MVP we lean conservative: an opt-in block whose
+  // rules use an engine not registered here (e.g. dynamic-attack) is
+  // naturally skipped by the engine check below anyway.
   const overrides = options.severityOverrides;
   const onProgress = options.onRuleEvaluated;
   const findings: Finding[] = [];
@@ -78,6 +93,7 @@ export function runRules(discovery: DiscoveryResult, options: RunRulesOptions = 
   const eligible = pack.rules.filter((rule) => {
     if (rule.enabled === false) return false;
     if (filter?.has(rule._id) === false) return false;
+    if (disabledBlocks?.has(rule.block)) return false;
     if (disabled?.has(rule._id)) return false;
     if (disabledGroups && rule.owasp.length > 0 && rule.owasp.every((g) => disabledGroups.has(g))) {
       return false;
@@ -96,8 +112,10 @@ export function runRules(discovery: DiscoveryResult, options: RunRulesOptions = 
     }
     // Attach a code snippet (±3 lines of context) to every finding
     // whose file is real and readable. This makes the report show the
-    // actual offending line, not just file:line:col.
+    // actual offending line, not just file:line:col. Only static
+    // findings carry a SourceLocation — dynamic findings have no file.
     for (const f of produced) {
+      if (f.kind !== 'static') continue;
       if (!f.codeSnippet) {
         const snippet = readSnippet(discovery.rootPath, f.location.file, f.location.line);
         if (snippet) f.codeSnippet = snippet;

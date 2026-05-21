@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { Finding, ScanResult, Severity } from '@audithex/core-types';
+import type { Finding, ScanKind, ScanResult, Severity } from '@audithex/core-types';
 import type { Connection } from 'mongoose';
 import { type AiFixDocument, getAiFixModel } from './models/ai-fix.js';
 import {
@@ -51,13 +51,22 @@ export function fingerprintScanResult(result: ScanResult): string {
   const payload = JSON.stringify({
     rootPath: result.rootPath,
     rulesVersion: result.rulesVersion,
-    findings: result.findings.map((f) => ({
-      ruleId: f.ruleId,
-      severity: f.severity,
-      file: f.location.file,
-      line: f.location.line,
-      messageKey: f.messageKey,
-    })),
+    findings: result.findings.map((f) =>
+      f.kind === 'static'
+        ? {
+            ruleId: f.ruleId,
+            severity: f.severity,
+            file: f.location.file,
+            line: f.location.line,
+            messageKey: f.messageKey,
+          }
+        : {
+            ruleId: f.ruleId,
+            severity: f.severity,
+            payloadId: f.payloadId,
+            messageKey: f.messageKey,
+          },
+    ),
   });
   return createHash('sha256').update(payload).digest('hex');
 }
@@ -66,6 +75,8 @@ export interface SaveScanRunInput {
   scan: ScanResult;
   userId?: string | null;
   projectId?: string | null;
+  scanType?: ScanKind;
+  dynamicScanBudget?: { maxUsd: number; spentUsd: number; exhausted: boolean } | null;
 }
 
 export async function saveScanRun(
@@ -85,6 +96,8 @@ export async function saveScanRun(
     elapsedMs: input.scan.elapsedMs,
     topSeverity: computeTopSeverity(input.scan.findings),
     fingerprint: fingerprintScanResult(input.scan),
+    scanType: input.scanType ?? 'static',
+    dynamicScanBudget: input.dynamicScanBudget ?? null,
   };
   const created = await Model.create(doc);
   return created.toObject({ versionKey: false });
@@ -315,6 +328,7 @@ export interface CreateProjectInput {
   languages?: string[];
   extraExtensions?: string[];
   disabledOwaspGroups?: string[];
+  disabledBlockIds?: string[];
   dbConnection?: ProjectDbConnection | null;
   dbTables?: string[];
   dbScanAllTables?: boolean;
@@ -338,6 +352,7 @@ export async function createProject(
     languages: input.languages ?? [],
     extraExtensions: (input.extraExtensions ?? []).map((e) => e.toLowerCase()),
     disabledOwaspGroups: input.disabledOwaspGroups ?? [],
+    disabledBlockIds: input.disabledBlockIds ?? [],
     dbConnection: input.dbConnection ?? null,
     dbTables: input.dbTables ?? [],
     dbScanAllTables: input.dbScanAllTables ?? false,
@@ -350,6 +365,7 @@ export async function createProject(
     languages: doc.languages ?? [],
     extraExtensions: doc.extraExtensions ?? [],
     disabledOwaspGroups: doc.disabledOwaspGroups ?? [],
+    disabledBlockIds: doc.disabledBlockIds ?? [],
     dbTables: doc.dbTables ?? [],
     dbScanAllTables: doc.dbScanAllTables ?? false,
   };

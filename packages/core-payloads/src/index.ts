@@ -1,16 +1,9 @@
-export type PayloadCategory =
-  | 'prompt_injection_direct'
-  | 'prompt_injection_indirect'
-  | 'jailbreak_roleplay'
-  | 'system_prompt_leak'
-  | 'tool_misuse'
-  | 'data_exfiltration'
-  | 'xss_in_output'
-  | 'pii_extraction'
-  | 'dos_token_flood'
-  | 'multi_shot_jailbreak';
-
-export type PayloadJudgeType = 'regex' | 'refusal' | 'llm';
+// `PayloadCategory` and `PayloadJudgeType` are owned by `@audithex/core-types`
+// so the discriminated `Finding` union can refer to them without a circular
+// dep. They are re-exported here for back-compat with callers that imported
+// them directly from this package.
+export type { PayloadCategory, PayloadJudgeType } from '@audithex/core-types';
+import type { PayloadCategory, PayloadJudgeType } from '@audithex/core-types';
 
 export interface PayloadJudge {
   type: PayloadJudgeType;

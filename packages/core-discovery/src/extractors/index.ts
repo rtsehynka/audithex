@@ -1,3 +1,4 @@
+import { llmCallSitesExtractor } from './llm-call-sites.js';
 import { modelStringsExtractor } from './model-strings.js';
 import { ragConfigExtractor } from './rag-config.js';
 import { sdkImportsExtractor } from './sdk-imports.js';
@@ -15,6 +16,7 @@ export type { Extractor, ExtractorInput } from './types.js';
  */
 export const BUILTIN_EXTRACTORS: readonly Extractor[] = Object.freeze([
   sdkImportsExtractor,
+  llmCallSitesExtractor,
   modelStringsExtractor,
   secretCandidatesExtractor,
   systemPromptsExtractor,

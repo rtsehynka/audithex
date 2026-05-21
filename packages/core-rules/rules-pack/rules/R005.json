@@ -49,7 +49,9 @@
     ]
   },
   "messageKey": "findings:R005.message",
+  "rationaleKey": "findings:R005.rationale",
   "fixKey": "findings:R005.fix",
+  "block": "block:output-handling",
   "meta": {
     "title": "Dynamic code execution primitive in source",
     "category": "code-injection"

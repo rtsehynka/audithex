@@ -53,6 +53,14 @@ export interface ProjectDocument {
    */
   disabledOwaspGroups: string[];
   /**
+   * Block IDs the user has turned OFF for this project. Disabling a
+   * block skips every rule that belongs to it — the coarsest filter
+   * layer. Composes with `disabledRuleIds` (per-rule) and
+   * `disabledOwaspGroups` (per-OWASP-category): a rule is skipped if
+   * disabled by ANY layer.
+   */
+  disabledBlockIds: string[];
+  /**
    * Free-form extra extensions to include beyond what the language
    * registry knows about (e.g. `.tf`, `.yml`). Includes the leading
    * dot; lower-cased on persist.
@@ -84,6 +92,7 @@ const ProjectSchema = new Schema<ProjectDocument>(
     languages: { type: [String], default: [] },
     extraExtensions: { type: [String], default: [] },
     disabledOwaspGroups: { type: [String], default: [] },
+    disabledBlockIds: { type: [String], default: [] },
     dbConnection: { type: DbConnectionSchema, default: null },
     dbTables: { type: [String], default: [] },
     dbScanAllTables: { type: Boolean, default: false },

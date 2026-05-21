@@ -1,0 +1,42 @@
+{
+  "secrets": {
+    "name": "Секрети",
+    "description": "Hardcoded API-ключі, токени, credentials до баз і інші секрети у вихідному коді чи system prompts.",
+    "rationale": "Витоклі секрети в git history неможливо «розвиткнути». Один коміт назавжди ламає вартість ротації — кожен співавтор і кожен CI-запуск після того коміту вже бачив ключ, і кожен fork несе копію."
+  },
+  "prompt-injection": {
+    "name": "Prompt injection",
+    "description": "Патерни коду, які дозволяють user-controlled рядкам переписати поведінку моделі, прослизнувши у system prompt без розділення.",
+    "rationale": "Підручниковий attack surface для будь-якого LLM-додатку. Якщо untrusted input потрапляє у prompt raw, одне повідомлення 'Ignore previous instructions' pivot-ить агента в руки атакера."
+  },
+  "system-prompt-leakage": {
+    "name": "System prompt leakage",
+    "description": "System prompts які містять credentials, internal URL, бізнес-логіку чи PII, які не повинні бути доступні через модель.",
+    "rationale": "System prompts легко витягуються однорядковими атаками. Все всередині — секрети, internal URL, бізнес-правила — фактично публічне, як тільки агент пішов у production."
+  },
+  "tool-design": {
+    "name": "Tool design",
+    "description": "Tool definitions без description чи parameter schema, що приймають raw SQL/shell/paths, або містять деструктивні дієслова без approval gate.",
+    "rationale": "Моделі впевнено викликають tools на основі description. Loose або destructive tool definition — це confused-deputy готовий вистрелити, у масштабі, без human in the loop."
+  },
+  "output-handling": {
+    "name": "Output handling",
+    "description": "Output LLM потрапляє у eval, file paths, fetch URLs, SQL чи innerHTML без sanitization — відповідь моделі стає attacker-controlled, коли спрацьовує prompt injection.",
+    "rationale": "Output моделі контролюється атакером через prompt injection. Все, чого ви б ніколи не зробили з user input — eval-нути, concat-ити у SQL, render-ити як HTML — ніколи не робіть і з LLM output."
+  },
+  "supply-chain": {
+    "name": "Supply chain",
+    "description": "Небезпечна десеріалізація model weights (pickle, torch.load) і typosquat-залежності, пов'язані з LLM, що exfiltrate-ять ключі під час install.",
+    "rationale": "Завантажити pickle-модель з ненадійного джерела = запустити її автора скрипт. Typosquat npm/PyPI пакети exfiltrate-ять API-ключі через postinstall ще до того, як виконається ваш код."
+  },
+  "unbounded-consumption": {
+    "name": "Unbounded consumption",
+    "description": "LLM API виклики без обмеження output токенів, recursive prompts чи token-flood патерни, які дозволяють одному користувачу drain-ити бюджет цілої команди.",
+    "rationale": "Атакеру потрібен лише один input, що змушує нескінченно довгий output, щоб drain-ути спільний token budget. Cost-DoS дешевий для атакера і дорогий для команди."
+  },
+  "dynamic-self-attack": {
+    "name": "Dynamic self-attack",
+    "description": "Live-тестування розгорнутого AI-агента: Audithex шле crafted attack prompts на HTTPS endpoint агента і оцінює відповіді. За замовчуванням вимкнено — opt-in, бо кожна атака витрачає платні токени.",
+    "rationale": "Статичний аналіз знаходить код, який *може* бути експлуатований. Dynamic testing знаходить чи розгорнута система *насправді* експлуатується. Обидва потрібні; жоден не замінює іншого."
+  }
+}

@@ -12,7 +12,9 @@
     "perFileLimit": 100
   },
   "messageKey": "findings:R001.message",
+  "rationaleKey": "findings:R001.rationale",
   "fixKey": "findings:R001.fix",
+  "block": "block:secrets",
   "meta": {
     "title": "Hardcoded API key literal in source",
     "category": "secrets",

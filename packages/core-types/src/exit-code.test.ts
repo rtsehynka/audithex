@@ -3,11 +3,14 @@ import { type Finding, exitCodeFromFindings } from './index.js';
 
 function finding(severity: Finding['severity']): Finding {
   return {
+    kind: 'static',
     ruleId: 'R000',
     severity,
     owasp: ['LLM01'],
+    blockId: 'block:test',
     location: { file: 'x.ts', line: 1 },
     messageKey: 'k',
+    rationaleKey: 'r',
     fixKey: 'f',
   };
 }

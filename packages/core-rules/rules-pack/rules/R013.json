@@ -36,7 +36,9 @@
     ]
   },
   "messageKey": "findings:R013.message",
+  "rationaleKey": "findings:R013.rationale",
   "fixKey": "findings:R013.fix",
+  "block": "block:supply-chain",
   "meta": {
     "title": "Unsafe pickle / torch.load deserialization",
     "category": "supply-chain",
