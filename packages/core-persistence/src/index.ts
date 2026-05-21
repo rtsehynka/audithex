@@ -14,6 +14,7 @@ export {
   fingerprintScanResult,
   findAiFix,
   findUserByEmail,
+  findUserById,
   getProjectById,
   getProjectByName,
   getScanRunById,
@@ -25,6 +26,8 @@ export {
   saveAiFix,
   saveScanRun,
   updateProject,
+  updateUserEmail,
+  updateUserPassword,
   type CreateProjectInput,
   type CreateUserInput,
   type ListScanRunsOptions,
@@ -32,6 +35,7 @@ export {
   type SaveAiFixInput,
   type SaveScanRunInput,
   type UpdateProjectInput,
+  type UpdateUserResult,
 } from './repository.js';
 export {
   getScanRunModel,

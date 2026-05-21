@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { requireSession } from '../../lib/auth';
+import { collectFieldErrors } from '../../lib/form-errors';
 import { createProjectFromUi, deleteProjectFromUi, updateProjectFromUi } from '../../lib/projects';
 
 const RULE_ID_PATTERN = /^R\d{3}$/;
@@ -134,15 +135,6 @@ export async function deleteProjectAction(id: string): Promise<void> {
   revalidatePath('/projects');
   revalidatePath('/');
   redirect('/projects');
-}
-
-function collectFieldErrors(issues: z.ZodIssue[]): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const issue of issues) {
-    const key = issue.path[0];
-    if (typeof key === 'string' && !out[key]) out[key] = issue.message;
-  }
-  return out;
 }
 
 function parseRuleIds(raw: string | undefined): string[] | null {

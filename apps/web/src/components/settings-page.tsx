@@ -24,6 +24,15 @@ export default function SettingsPage({ data, sessionEmail }: Props): ReactElemen
           overrides live in <code className="text-[#10b981]">.audithex/config.json</code>; the CLI
           owns the on-disk truth.
         </p>
+        <p className="mt-2 text-xs">
+          <Link
+            href="/settings/account"
+            data-testid="account-link"
+            className="text-[#10b981] hover:text-[#f97316]"
+          >
+            → Change email or password
+          </Link>
+        </p>
       </header>
 
       <Card title="Audithex" testid="card-audithex">

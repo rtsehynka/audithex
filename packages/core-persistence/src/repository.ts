@@ -147,6 +147,65 @@ export async function findUserByEmail(
   return Model.findOne({ email: email.toLowerCase() }).lean<UserDocument | null>().exec();
 }
 
+export async function findUserById(
+  connection: Connection,
+  id: string,
+): Promise<UserDocument | null> {
+  const Model = getUserModel(connection);
+  return Model.findById(id).lean<UserDocument | null>().exec();
+}
+
+export type UpdateUserResult =
+  | { ok: true; user: UserDocument }
+  | { ok: false; reason: 'duplicate' | 'not-found' | 'error'; message?: string };
+
+export async function updateUserEmail(
+  connection: Connection,
+  id: string,
+  newEmail: string,
+): Promise<UpdateUserResult> {
+  const Model = getUserModel(connection);
+  const email = newEmail.toLowerCase();
+  const clash = await Model.findOne({ email, _id: { $ne: id } })
+    .lean()
+    .exec();
+  if (clash) return { ok: false, reason: 'duplicate' };
+  try {
+    const updated = await Model.findByIdAndUpdate(
+      id,
+      { $set: { email } },
+      { new: true, runValidators: true },
+    )
+      .lean<UserDocument | null>()
+      .exec();
+    if (!updated) return { ok: false, reason: 'not-found' };
+    return { ok: true, user: updated };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: 'error',
+      message: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
+export async function updateUserPassword(
+  connection: Connection,
+  id: string,
+  newPasswordHash: string,
+): Promise<UpdateUserResult> {
+  const Model = getUserModel(connection);
+  const updated = await Model.findByIdAndUpdate(
+    id,
+    { $set: { passwordHash: newPasswordHash } },
+    { new: true },
+  )
+    .lean<UserDocument | null>()
+    .exec();
+  if (!updated) return { ok: false, reason: 'not-found' };
+  return { ok: true, user: updated };
+}
+
 /* --- Rules-pack updates -------------------------------------------- */
 
 export interface LogRulesPackUpdateInput {
