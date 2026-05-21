@@ -31,6 +31,13 @@ export default function ScanHistoryPage({ data, sessionEmail, signOut }: Props):
             Projects
           </Link>
           <Link
+            href="/rules"
+            data-testid="rules-link"
+            className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#10b981] hover:text-[#10b981]"
+          >
+            Rules
+          </Link>
+          <Link
             href="/settings"
             data-testid="settings-link"
             className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#10b981] hover:text-[#10b981]"

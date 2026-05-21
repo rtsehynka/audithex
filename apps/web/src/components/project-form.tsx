@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { type ReactElement, useActionState, useState } from 'react';
 import type { ProjectActionResult } from '../app/projects/actions';
 import type { ProjectView } from '../lib/projects';
@@ -122,7 +123,17 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
                         className="h-4 w-4 cursor-pointer accent-[#10b981]"
                       />
                     </td>
-                    <td className="px-3 py-2 font-mono text-[#10b981]">{rule.id}</td>
+                    <td className="px-3 py-2">
+                      <Link
+                        href={`/rules/${rule.id}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        data-testid="rule-link"
+                        className="font-mono text-[#10b981] hover:text-[#f97316]"
+                      >
+                        {rule.id}
+                      </Link>
+                    </td>
                     <td className="px-3 py-2 text-[#d4d4d4]">{rule.title}</td>
                     <td className="px-3 py-2">
                       <SeverityTag severity={rule.defaultSeverity} />
