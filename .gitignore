@@ -38,6 +38,9 @@ yarn-debug.log*
 
 # Test artifacts
 **/__screenshots__/
+**/cypress/screenshots/
+**/cypress/videos/
+**/cypress/downloads/
 
 # Generated reports
 report.html

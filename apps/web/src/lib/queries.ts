@@ -81,6 +81,33 @@ export async function listScans({
   };
 }
 
+export interface ScanComparisonOption {
+  id: string;
+  label: string;
+}
+
+/**
+ * Returns the most recent N scan runs other than `excludeId`, used to
+ * populate the "Diff vs…" picker on the scan-detail page.
+ */
+export async function listComparisonOptions({
+  excludeId,
+  limit = 25,
+}: {
+  excludeId: string;
+  limit?: number;
+}): Promise<ScanComparisonOption[]> {
+  const conn = await getConnection();
+  const docs = await fetchScanRuns(conn, { limit: limit + 1 });
+  return docs
+    .filter((d) => String(d._id) !== excludeId)
+    .slice(0, limit)
+    .map((d) => ({
+      id: String(d._id),
+      label: `${String(d._id).slice(0, 8)}… · ${d.scannedAt.slice(0, 16).replace('T', ' ')} · ${d.findings.length} findings`,
+    }));
+}
+
 export async function getScan(id: string): Promise<ScanRunDetail | null> {
   if (!isObjectIdLike(id)) return null;
   const conn = await getConnection();

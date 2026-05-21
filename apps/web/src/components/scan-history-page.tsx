@@ -21,15 +21,24 @@ export default function ScanHistoryPage({ data, sessionEmail, signOut }: Props):
             {data.total === 1 ? '' : 's'} on record.
           </p>
         </div>
-        <form action={signOut}>
-          <button
-            type="submit"
-            data-testid="logout-button"
-            className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#f97316] hover:text-[#f97316]"
+        <div className="flex items-center gap-2">
+          <Link
+            href="/settings"
+            data-testid="settings-link"
+            className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#10b981] hover:text-[#10b981]"
           >
-            Sign out
-          </button>
-        </form>
+            Settings
+          </Link>
+          <form action={signOut}>
+            <button
+              type="submit"
+              data-testid="logout-button"
+              className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#f97316] hover:text-[#f97316]"
+            >
+              Sign out
+            </button>
+          </form>
+        </div>
       </header>
 
       {data.runs.length === 0 ? <EmptyState /> : <ScanTable data={data} />}

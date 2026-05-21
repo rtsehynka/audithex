@@ -27,7 +27,27 @@ const schema = z.object({
       }
       return n;
     }),
+  ANTHROPIC_API_KEY: z.preprocess(
+    (v) => (typeof v === 'string' && v.length === 0 ? undefined : v),
+    z.string().optional(),
+  ),
+  AUDITHEX_LLM_MODEL: z.string().default('claude-sonnet-4-6'),
+  AUDITHEX_LLM_COST_CAP_USD: z.string().default('1.00').transform(parseCostCap),
+  AUDITHEX_LLM_DRY_RUN: z
+    .preprocess(
+      (v) => (typeof v === 'string' && v.length === 0 ? undefined : v),
+      z.enum(['true', 'false']).optional(),
+    )
+    .transform((v) => v === 'true'),
 });
+
+function parseCostCap(raw: string): number {
+  const n = Number.parseFloat(raw);
+  if (!Number.isFinite(n) || n < 0) {
+    throw new Error(`AUDITHEX_LLM_COST_CAP_USD must be a non-negative number (got "${raw}").`);
+  }
+  return n;
+}
 
 export type WebEnv = z.infer<typeof schema>;
 

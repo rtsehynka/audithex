@@ -1,18 +1,41 @@
 import Link from 'next/link';
 import type { ReactElement } from 'react';
 import { formatMs, formatTimestamp } from '../lib/format';
-import type { ScanRunDetail, SerializableFinding } from '../lib/queries';
+import type { ScanComparisonOption, ScanRunDetail, SerializableFinding } from '../lib/queries';
+import ComparePicker from './compare-picker';
+import FindingFixCard from './finding-fix-card';
 import SeverityBadge from './severity-badge';
+
+export interface CachedFix {
+  findingKey: string;
+  provider: string;
+  model: string;
+  costUsd: number;
+  response: string;
+}
 
 interface Props {
   scan: ScanRunDetail;
   sessionEmail: string;
+  compareOptions: ScanComparisonOption[];
+  llmAvailable: boolean;
+  llmProvider: 'anthropic' | 'dry-run' | 'unconfigured';
+  cachedFixes: CachedFix[];
 }
 
 const SEVERITY_ORDER: SerializableFinding['severity'][] = ['critical', 'high', 'medium', 'low'];
 
-export default function ScanDetailPage({ scan, sessionEmail }: Props): ReactElement {
+export default function ScanDetailPage({
+  scan,
+  sessionEmail,
+  compareOptions,
+  llmAvailable,
+  llmProvider,
+  cachedFixes,
+}: Props): ReactElement {
   const grouped = groupBySeverity(scan.findings);
+  const fixByKey = new Map<string, CachedFix>();
+  for (const fix of cachedFixes) fixByKey.set(fix.findingKey, fix);
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10">
       <header className="flex flex-wrap items-baseline justify-between gap-4 border-b border-[#1f242d] pb-4">
@@ -31,7 +54,19 @@ export default function ScanDetailPage({ scan, sessionEmail }: Props): ReactElem
             Signed in as <span data-testid="session-email">{sessionEmail}</span>.
           </p>
         </div>
-        <SeverityBadge severity={scan.topSeverity} />
+        <div className="flex flex-wrap items-center gap-3">
+          <ComparePicker currentId={scan.id} options={compareOptions} />
+          <Link
+            href={`/scans/${scan.id}/pdf`}
+            data-testid="download-pdf"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#10b981] hover:text-[#10b981]"
+          >
+            Download PDF
+          </Link>
+          <SeverityBadge severity={scan.topSeverity} />
+        </div>
       </header>
 
       <section
@@ -71,7 +106,17 @@ export default function ScanDetailPage({ scan, sessionEmail }: Props): ReactElem
         SEVERITY_ORDER.map((severity) => {
           const findings = grouped.get(severity);
           if (!findings || findings.length === 0) return null;
-          return <SeverityGroup key={severity} severity={severity} findings={findings} />;
+          return (
+            <SeverityGroup
+              key={severity}
+              severity={severity}
+              findings={findings}
+              scanId={scan.id}
+              llmAvailable={llmAvailable}
+              llmProvider={llmProvider}
+              fixByKey={fixByKey}
+            />
+          );
         })
       )}
     </main>
@@ -100,9 +145,17 @@ function Meta({
 function SeverityGroup({
   severity,
   findings,
+  scanId,
+  llmAvailable,
+  llmProvider,
+  fixByKey,
 }: {
   severity: SerializableFinding['severity'];
   findings: SerializableFinding[];
+  scanId: string;
+  llmAvailable: boolean;
+  llmProvider: Props['llmProvider'];
+  fixByKey: Map<string, CachedFix>;
 }): ReactElement {
   return (
     <section
@@ -118,31 +171,42 @@ function SeverityGroup({
         </div>
       </header>
       <ul className="divide-y divide-[#1f242d]">
-        {findings.map((f, index) => (
-          <li
-            key={`${f.ruleId}-${f.file}-${f.line}-${index}`}
-            data-testid="finding-row"
-            data-rule-id={f.ruleId}
-            className="px-4 py-3 text-xs"
-          >
-            <div className="flex flex-wrap items-baseline gap-3">
-              <span className="font-mono text-sm text-[#10b981]">{f.ruleId}</span>
-              <span className="text-[#6b7280]">{f.owasp.join(', ') || '—'}</span>
-              {f.cwe ? <span className="text-[#6b7280]">{f.cwe}</span> : null}
-              <code className="text-[#d4d4d4]">
-                {f.file}:{f.line}
-                {typeof f.column === 'number' ? `:${f.column}` : ''}
-              </code>
-            </div>
-            <p className="mt-1 text-[11px] text-[#6b7280]">
-              <span className="font-semibold text-[#d4d4d4]">{f.messageKey}</span>
-              {f.messageParams ? ` — ${formatParams(f.messageParams)}` : null}
-            </p>
-            <p className="mt-1 text-[11px] text-[#6b7280]">
-              fix: <span className="text-[#d4d4d4]">{f.fixKey}</span>
-            </p>
-          </li>
-        ))}
+        {findings.map((f, index) => {
+          const findingKey = `${f.ruleId}|${f.file}|${f.line}`;
+          const cached = fixByKey.get(findingKey) ?? null;
+          return (
+            <li
+              key={`${f.ruleId}-${f.file}-${f.line}-${index}`}
+              data-testid="finding-row"
+              data-rule-id={f.ruleId}
+              className="px-4 py-3 text-xs"
+            >
+              <div className="flex flex-wrap items-baseline gap-3">
+                <span className="font-mono text-sm text-[#10b981]">{f.ruleId}</span>
+                <span className="text-[#6b7280]">{f.owasp.join(', ') || '—'}</span>
+                {f.cwe ? <span className="text-[#6b7280]">{f.cwe}</span> : null}
+                <code className="text-[#d4d4d4]">
+                  {f.file}:{f.line}
+                  {typeof f.column === 'number' ? `:${f.column}` : ''}
+                </code>
+              </div>
+              <p className="mt-1 text-[11px] text-[#6b7280]">
+                <span className="font-semibold text-[#d4d4d4]">{f.messageKey}</span>
+                {f.messageParams ? ` — ${formatParams(f.messageParams)}` : null}
+              </p>
+              <p className="mt-1 text-[11px] text-[#6b7280]">
+                fix: <span className="text-[#d4d4d4]">{f.fixKey}</span>
+              </p>
+              <FindingFixCard
+                scanId={scanId}
+                findingKey={findingKey}
+                llmAvailable={llmAvailable}
+                llmProvider={llmProvider}
+                initialFix={cached}
+              />
+            </li>
+          );
+        })}
       </ul>
     </section>
   );

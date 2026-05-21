@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import type { Finding, ScanResult, Severity } from '@audithex/core-types';
 import type { Connection } from 'mongoose';
+import { type AiFixDocument, getAiFixModel } from './models/ai-fix.js';
 import {
   type RulesPackUpdateDocument,
   type UpdateOutcomeKind,
@@ -179,4 +180,53 @@ export async function listRulesPackUpdates(
     .limit(limit)
     .lean<RulesPackUpdateDocument[]>()
     .exec();
+}
+
+/* --- AI fixes ------------------------------------------------------- */
+
+export interface SaveAiFixInput {
+  scanId: string;
+  findingKey: string;
+  ruleId: string;
+  provider: AiFixDocument['provider'];
+  model: string;
+  costUsd: number;
+  inputTokens: number;
+  outputTokens: number;
+  prompt: string;
+  response: string;
+}
+
+export async function saveAiFix(
+  connection: Connection,
+  input: SaveAiFixInput,
+): Promise<AiFixDocument> {
+  const Model = getAiFixModel(connection);
+  // Upsert so a re-run for the same (scanId, findingKey) overwrites
+  // the previous cached output — useful when the LLM model is bumped.
+  const result = await Model.findOneAndUpdate(
+    { scanId: input.scanId, findingKey: input.findingKey },
+    { $set: input },
+    { new: true, upsert: true, setDefaultsOnInsert: true },
+  )
+    .lean<AiFixDocument>()
+    .exec();
+  return result;
+}
+
+export async function findAiFix(
+  connection: Connection,
+  scanId: string,
+  findingKey: string,
+): Promise<AiFixDocument | null> {
+  const Model = getAiFixModel(connection);
+  return Model.findOne({ scanId, findingKey }).lean<AiFixDocument | null>().exec();
+}
+
+export async function listAiFixesForScan(
+  connection: Connection,
+  scanId: string,
+): Promise<AiFixDocument[]> {
+  const Model = getAiFixModel(connection);
+  return Model.find({ scanId }).sort({ createdAt: 1 }).lean<AiFixDocument[]>().exec();
 }

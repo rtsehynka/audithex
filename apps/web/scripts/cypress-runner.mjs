@@ -14,8 +14,9 @@
  * `yarn workspace @audithex/web run cypress:e2e`.
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -63,20 +64,23 @@ async function main() {
   await persistence.createUser(conn, { email: EMAIL, passwordHash });
   await persistence.disconnectAll();
 
-  console.log('[orchestrator] seeding banking-bot scan via the CLI…');
+  console.log('[orchestrator] seeding scans via the CLI…');
   const cliBin = resolve(repoRoot, 'apps', 'cli', 'bin', 'audithex.js');
   const fixture = resolve(repoRoot, 'fixtures', 'fixture-banking-bot');
-  const cliResult = spawnSync('node', [cliBin, 'scan', fixture, '--report', 'json'], {
-    env: { ...process.env, MONGODB_URI: uri },
-    encoding: 'utf8',
-  });
-  // The CLI exits 2 on a fixture full of critical findings — that is
-  // the expected outcome; only fail if the persistence message is
-  // missing from stdout.
-  if (!cliResult.stdout.includes('Saved scan run')) {
-    throw new Error(
-      `audithex scan did not persist (exit=${cliResult.status}): ${cliResult.stderr || cliResult.stdout}`,
-    );
+  // Seed a clean tmp project first so banking-bot ends up as the
+  // newest scan (createdAt desc → first row in the history table).
+  // Both scans give the compare view a 10-vs-0 finding diff to work
+  // against.
+  for (const target of [makeCleanProject(), fixture]) {
+    const cliResult = spawnSync('node', [cliBin, 'scan', target, '--report', 'json'], {
+      env: { ...process.env, MONGODB_URI: uri },
+      encoding: 'utf8',
+    });
+    if (!cliResult.stdout.includes('Saved scan run')) {
+      throw new Error(
+        `audithex scan did not persist for ${target} (exit=${cliResult.status}): ${cliResult.stderr || cliResult.stdout}`,
+      );
+    }
   }
 
   const nextBin = locateBin('next');
@@ -95,6 +99,7 @@ async function main() {
       ...process.env,
       MONGODB_URI: uri,
       AUDITHEX_UI_SESSION_SECRET: sessionSecret,
+      AUDITHEX_LLM_DRY_RUN: 'true',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -111,6 +116,17 @@ async function main() {
 
   await runCypress(uri);
   await cleanup(0);
+}
+
+function makeCleanProject() {
+  const dir = mkdtempSync(join(tmpdir(), 'audithex-clean-'));
+  mkdirSync(join(dir, 'src'), { recursive: true });
+  writeFileSync(
+    join(dir, 'src', 'safe.ts'),
+    'export function safe(x: number): number {\n  return x + 1;\n}\n',
+    'utf8',
+  );
+  return dir;
 }
 
 function locateBin(name) {

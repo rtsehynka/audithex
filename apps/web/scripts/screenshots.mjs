@@ -7,9 +7,9 @@
  * and the history list / detail page are never empty.
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { homedir, tmpdir } from 'node:os';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -39,6 +39,22 @@ async function cleanup(code) {
 
 process.on('SIGINT', () => cleanup(130));
 process.on('SIGTERM', () => cleanup(143));
+
+async function pageCookieString(page) {
+  const jar = await page.cookies();
+  return jar.map((c) => `${c.name}=${c.value}`).join('; ');
+}
+
+function makeCleanProject() {
+  const dir = mkdtempSync(join(tmpdir(), 'audithex-clean-'));
+  mkdirSync(join(dir, 'src'), { recursive: true });
+  writeFileSync(
+    join(dir, 'src', 'safe.ts'),
+    'export function safe(x: number): number {\n  return x + 1;\n}\n',
+    'utf8',
+  );
+  return dir;
+}
 
 function locateBin(name) {
   const candidates = [
@@ -86,20 +102,27 @@ async function main() {
   });
   await persistence.disconnectAll();
 
-  console.log('[screenshots] seeding banking-bot scan via the CLI…');
+  console.log('[screenshots] seeding clean + banking-bot scans via the CLI…');
   const cliBin = resolve(repoRoot, 'apps', 'cli', 'bin', 'audithex.js');
   const fixture = resolve(repoRoot, 'fixtures', 'fixture-banking-bot');
-  const cliResult = spawnSync('node', [cliBin, 'scan', fixture, '--report', 'json'], {
-    env: { ...process.env, MONGODB_URI: uri },
-    encoding: 'utf8',
-  });
-  if (!cliResult.stdout.includes('Saved scan run')) {
-    throw new Error(
-      `audithex scan did not persist (exit=${cliResult.status}): ${cliResult.stderr || cliResult.stdout}`,
-    );
+  const cleanProject = makeCleanProject();
+  const seededIds = [];
+  for (const target of [cleanProject, fixture]) {
+    const cliResult = spawnSync('node', [cliBin, 'scan', target, '--report', 'json'], {
+      env: { ...process.env, MONGODB_URI: uri },
+      encoding: 'utf8',
+    });
+    if (!cliResult.stdout.includes('Saved scan run')) {
+      throw new Error(
+        `audithex scan did not persist for ${target} (exit=${cliResult.status}): ${cliResult.stderr || cliResult.stdout}`,
+      );
+    }
+    const id = cliResult.stdout.match(/Saved scan run ([a-f0-9]{24})/)?.[1];
+    if (!id) throw new Error('could not parse seeded scan id from CLI output');
+    seededIds.push(id);
   }
-  const seededId = cliResult.stdout.match(/Saved scan run ([a-f0-9]{24})/)?.[1];
-  if (!seededId) throw new Error('could not parse seeded scan id from CLI output');
+  const [cleanScanId, bankingBotScanId] = seededIds;
+  const seededId = bankingBotScanId;
 
   const nextBin = locateBin('next');
   if (!nextBin) throw new Error('next binary not found');
@@ -114,6 +137,7 @@ async function main() {
       ...process.env,
       MONGODB_URI: uri,
       AUDITHEX_UI_SESSION_SECRET: '0123456789-screenshots-runner-32+',
+      AUDITHEX_LLM_DRY_RUN: 'true',
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });
@@ -172,15 +196,45 @@ async function main() {
   await page.waitForSelector('[data-testid=scan-title]', { timeout: 10_000 });
   await page.screenshot({ path: resolve(outDir, '04-scan-detail.png'), fullPage: true });
 
+  console.log(`[screenshots] /scans/${seededId} with first AI fix expanded…`);
+  await page.click('[data-testid=ai-fix-button]');
+  await page.waitForSelector('[data-testid=ai-fix-result]', { timeout: 15_000 });
+  // Give the result card a moment to settle before snapshot.
+  await new Promise((r) => setTimeout(r, 250));
+  await page.screenshot({ path: resolve(outDir, '05-ai-fix-dry-run.png'), fullPage: true });
+
+  console.log(`[screenshots] /scans/${seededId}/compare/${cleanScanId} (diff)…`);
+  await page.goto(`http://localhost:${PORT}/scans/${seededId}/compare/${cleanScanId}`, {
+    waitUntil: 'load',
+  });
+  await page.waitForSelector('[data-testid=compare-title]', { timeout: 10_000 });
+  await page.screenshot({ path: resolve(outDir, '06-scan-compare.png'), fullPage: true });
+
+  console.log('[screenshots] /settings…');
+  await page.goto(`http://localhost:${PORT}/settings`, { waitUntil: 'load' });
+  await page.waitForSelector('[data-testid=card-mongo]', { timeout: 10_000 });
+  await page.screenshot({ path: resolve(outDir, '07-settings.png'), fullPage: true });
+
+  console.log(`[screenshots] /scans/${seededId}/pdf (download)…`);
+  const pdfResponse = await fetch(`http://localhost:${PORT}/scans/${seededId}/pdf`, {
+    headers: { cookie: await pageCookieString(page) },
+  });
+  if (pdfResponse.status !== 200) {
+    throw new Error(`pdf route returned ${pdfResponse.status}`);
+  }
+  const pdfBytes = new Uint8Array(await pdfResponse.arrayBuffer());
+  const { writeFileSync: writeBin } = await import('node:fs');
+  writeBin(resolve(outDir, '08-scan-report.pdf'), pdfBytes);
+
   console.log('[screenshots] sign out → /login…');
   await page.goto(`http://localhost:${PORT}/`, { waitUntil: 'load' });
   await Promise.all([
     page.click('[data-testid=logout-button]'),
     page.waitForNavigation({ waitUntil: 'load', timeout: 15_000 }),
   ]);
-  await page.screenshot({ path: resolve(outDir, '05-login-after-logout.png'), fullPage: false });
+  await page.screenshot({ path: resolve(outDir, '09-login-after-logout.png'), fullPage: false });
 
-  console.log(`[screenshots] saved 5 PNGs to ${outDir}`);
+  console.log(`[screenshots] saved 8 PNGs + 1 PDF to ${outDir}`);
   await cleanup(0);
 }
 

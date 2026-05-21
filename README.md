@@ -12,7 +12,7 @@ The scanner is polyglot. It ships native TypeScript Compiler API parsers for `.t
 
 - **CLI commands:** `scan`, `update`, `selftest`, `history`, `ui`, `user`, `init`, `version`
 - **Optional MongoDB persistence** — point `MONGODB_URI` at any Mongo and every scan is saved to the `scan_runs` collection for review through `audithex history` and the local web UI. The CLI runs fully without MongoDB; persistence is purely opt-in.
-- **Local web UI** — `audithex ui` boots a single-user dashboard on `http://localhost:7777` (Next.js 16 + React 19 + Tailwind 3, bcrypt-signed cookie auth, Cypress-covered).
+- **Local web UI** — `audithex ui` boots a single-user dashboard on `http://localhost:7777` (Next.js 16 + React 19 + Tailwind 3, bcrypt-signed cookie auth, Cypress-covered). Includes scan history, finding detail, scan-to-scan diff, read-only settings, **on-demand "Explain how to fix" answers from Claude** (cached in Mongo), and **one-click PDF export** of any scan.
 - **10 rules (R001 – R010)** covering OWASP LLM02, LLM06, LLM07, LLM08, mapped to CWE-22, 78, 79, 89, 94, 798, 918
 - **20 secret patterns** for OpenAI, Anthropic, Google, Cohere, Mistral, Hugging Face, Replicate, GitHub, GitLab, Slack, Discord, AWS, Stripe, Twilio, SendGrid
 - **3 rule engines:** `regex-in-code`, `regex-in-prompt`, `artifact-property`
@@ -254,10 +254,30 @@ node apps/cli/bin/audithex.js ui --port 8080            # change the port
 
 The UI redirects unauthenticated visitors to `/login`; signing in lands them on `/`. `Sign out` clears the cookie and returns to `/login`.
 
-The dashboard surfaces two routes today:
+The dashboard surfaces these routes:
 
 - **`/`** — Mongo-backed scan history table. Columns are id (clickable, ObjectId), `scannedAt` (UTC), top severity badge, severity counts (`C/H/M/L`), rules-pack version, elapsed time, and project root. Pagination via `?skip=…&limit=…` (default 25, max 100). Empty state explains how to seed scans by running `audithex scan` with `MONGODB_URI` set.
-- **`/scans/[id]`** — full detail of one scan run: metadata grid (project root, rules pack, audithex version, elapsed time, discovery summary, fingerprint), then findings grouped by severity (`critical` → `high` → `medium` → `low`). Unknown ids 404.
+- **`/scans/[id]`** — full detail of one scan run: metadata grid (project root, rules pack, audithex version, elapsed time, discovery summary, fingerprint), then findings grouped by severity (`critical` → `high` → `medium` → `low`). A "Diff vs…" picker in the header jumps straight to a side-by-side compare; a "Download PDF" link streams a real PDF of the report. Each finding row carries an **Explain how to fix** button that calls the configured LLM (or the canned dry-run response) and caches the result in Mongo. Unknown ids 404.
+- **`/scans/[id]/compare/[otherId]`** — diff between two scans, keyed by `ruleId + file + line`. The older `scannedAt` is automatically treated as the baseline. Shows totals (added / removed / unchanged) and grouped rows with severity badges.
+- **`/scans/[id]/pdf`** — real PDF stream (server-rendered via `@react-pdf/renderer`): A4 page, metadata grid, findings grouped by severity, `AI FIX CACHED` markers next to findings that have a stored explanation. ASCII-sanitised before render so future Unicode field values do not crash the type-shaper.
+- **`/settings`** — read-only info page: Audithex CLI version, session TTL, cookie name, MongoDB connection status + masked URI + database name + `scan_runs` count, the latest five rules-pack update outcomes. Surfaces a clear hint that on-disk overrides live in `.audithex/config.json` and the CLI owns the truth.
+
+### "Explain how to fix" (AI fix recommendations)
+
+Every finding row carries a per-finding **Explain how to fix** button. Clicking it calls the Anthropic Messages API directly from the server (no SDK dep, plain `fetch`) with a focused prompt: rule id, severity, file/line, and the message key. The response is cached in MongoDB (`ai_fixes` collection, keyed by `scanId + findingKey`), so re-opening the page renders the cached fix instantly without re-paying.
+
+```env
+# .env — required to enable the live LLM call
+ANTHROPIC_API_KEY=sk-ant-api03-...
+AUDITHEX_LLM_MODEL=claude-sonnet-4-6     # default
+AUDITHEX_LLM_COST_CAP_USD=1.00           # per-fix cost ceiling
+
+# Testing & screenshot pipelines set this instead of an API key — returns
+# a deterministic canned answer with $0 cost.
+AUDITHEX_LLM_DRY_RUN=true
+```
+
+The button surfaces the cost (in USD), the active model, and whether the answer was served from the cache or freshly computed. When neither `ANTHROPIC_API_KEY` nor `AUDITHEX_LLM_DRY_RUN` is set, the button renders disabled with the hint to configure one of them. Cost projection is checked against `AUDITHEX_LLM_COST_CAP_USD` before any network call; over-cap requests are rejected on the server.
 
 The UI runs entirely on `localhost` — no traffic leaves your machine. Cypress covers the login flow end-to-end:
 
@@ -400,7 +420,7 @@ Test count by workspace:
 | `@audithex/core-update` | 13 |
 | `@audithex/core-persistence` | 11 (in-memory MongoDB via `mongodb-memory-server`) |
 | `@audithex/cli` | 15 (incl. banking-bot selftest, exit-code coverage, end-to-end Mongo-backed `history`) |
-| `@audithex/web` (Cypress) | 6 end-to-end specs (login: redirect, invalid-creds, sign-in/sign-out; history: list render, list → detail navigation, unknown-id 404) |
+| `@audithex/web` (Cypress) | 11 end-to-end specs — login (3), history list + detail + 404 (3), Diff vs… picker + grouped diff rows (2), settings (1), AI fix dry-run with cache round-trip + real PDF download with `%PDF` magic (2) |
 | `@audithex/core-i18n` | 7 |
 | `@audithex/core-report` | 3 |
 | `@audithex/core-eval-runner` | 3 |

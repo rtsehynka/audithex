@@ -10,15 +10,19 @@ export {
   countScanRuns,
   createUser,
   fingerprintScanResult,
+  findAiFix,
   findUserByEmail,
   getScanRunById,
+  listAiFixesForScan,
   listRulesPackUpdates,
   listScanRuns,
   logRulesPackUpdate,
+  saveAiFix,
   saveScanRun,
   type CreateUserInput,
   type ListScanRunsOptions,
   type LogRulesPackUpdateInput,
+  type SaveAiFixInput,
   type SaveScanRunInput,
 } from './repository.js';
 export {
@@ -34,3 +38,8 @@ export {
   type RulesPackUpdateDocument,
   type UpdateOutcomeKind,
 } from './models/rules-pack-update.js';
+export {
+  getAiFixModel,
+  type AiFixDocument,
+  type LlmProvider,
+} from './models/ai-fix.js';
