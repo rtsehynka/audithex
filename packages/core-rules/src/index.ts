@@ -48,6 +48,14 @@ export interface RunRulesOptions {
    */
   disabledRuleIds?: readonly string[];
   /**
+   * OWASP LLM Top 10 category ids (LLM01..LLM10) the project has
+   * turned off. A rule is skipped iff EVERY category in its `owasp[]`
+   * appears in this list. Rules that map to multiple categories stay
+   * active as long as at least one of those categories is still
+   * enabled.
+   */
+  disabledOwaspGroups?: readonly string[];
+  /**
    * Optional sync callback fired after each rule executes. Used by the
    * web UI's live scan stream to emit per-rule progress over SSE.
    * Throwing here aborts the run — runRules does not catch.
@@ -62,6 +70,7 @@ export function runRules(discovery: DiscoveryResult, options: RunRulesOptions = 
   );
   const filter = options.ruleIds ? new Set(options.ruleIds) : null;
   const disabled = options.disabledRuleIds ? new Set(options.disabledRuleIds) : null;
+  const disabledGroups = options.disabledOwaspGroups ? new Set(options.disabledOwaspGroups) : null;
   const overrides = options.severityOverrides;
   const onProgress = options.onRuleEvaluated;
   const findings: Finding[] = [];
@@ -70,6 +79,9 @@ export function runRules(discovery: DiscoveryResult, options: RunRulesOptions = 
     if (rule.enabled === false) return false;
     if (filter?.has(rule._id) === false) return false;
     if (disabled?.has(rule._id)) return false;
+    if (disabledGroups && rule.owasp.length > 0 && rule.owasp.every((g) => disabledGroups.has(g))) {
+      return false;
+    }
     return Boolean(getEngine(rule.engine));
   });
 

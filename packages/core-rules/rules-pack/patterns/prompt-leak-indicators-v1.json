@@ -1,0 +1,44 @@
+{
+  "_id": "prompt-leak-indicators-v1",
+  "schemaVersion": "0.1",
+  "kind": "secret-patterns",
+  "source": "Hand-authored signatures for content that looks like it leaks system-prompt internals: env-var-substituted credentials, hardcoded password lines, database-schema dumps, internal-only markers. None of these are guaranteed leaks — they are signals worth a human review, hence severity=medium on R012.",
+  "license": "AGPL-3.0-or-later",
+  "entries": [
+    {
+      "id": "prompt-env-var-secret",
+      "provider": "envvar",
+      "description": "Environment-variable substitution that looks like a credential leak path inside a prompt",
+      "regex": "\\$\\{?[A-Z][A-Z0-9_]*_(PASSWORD|SECRET|KEY|TOKEN|API_KEY|CREDENTIAL)\\b",
+      "tags": ["prompt-leak"]
+    },
+    {
+      "id": "prompt-hardcoded-password",
+      "provider": "credential",
+      "description": "Hardcoded password / credential line inside a prompt",
+      "regex": "(?i)\\b(?:password|passwd|pwd|secret|api[_-]?key|token)\\s*[:=]\\s*[\"']?[A-Za-z0-9_!@#$%^&*\\-]{6,}",
+      "tags": ["prompt-leak"]
+    },
+    {
+      "id": "prompt-database-schema",
+      "provider": "schema",
+      "description": "Database-schema dump pasted into a prompt (table names with column lists)",
+      "regex": "\\b(?:users|customers|accounts|orders|transactions|payments|sessions)\\s*\\(\\s*(?:id|user_id|email|ssn|password)",
+      "tags": ["prompt-leak"]
+    },
+    {
+      "id": "prompt-internal-marker",
+      "provider": "marker",
+      "description": "Prompt contains \"internal only\" / \"confidential\" / \"do not share\" markers — indicates sensitive material",
+      "regex": "(?i)\\b(?:INTERNAL[ _-]ONLY|CONFIDENTIAL|DO[ _-]NOT[ _-]SHARE|EYES[ _-]ONLY|RESTRICTED)\\b",
+      "tags": ["prompt-leak"]
+    },
+    {
+      "id": "prompt-admin-credentials",
+      "provider": "marker",
+      "description": "Prompt references admin / root credentials by name",
+      "regex": "(?i)\\b(?:admin|root|superuser)\\s+(?:password|credential|access|token)\\b",
+      "tags": ["prompt-leak"]
+    }
+  ]
+}

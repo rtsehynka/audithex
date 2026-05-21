@@ -28,6 +28,15 @@ export interface ScanRunDocument {
   updatedAt?: Date;
 }
 
+const CodeSnippetSchema = new Schema(
+  {
+    startLine: { type: Number, required: true },
+    focusLine: { type: Number, required: true },
+    lines: { type: [String], default: [] },
+  },
+  { _id: false },
+);
+
 const FindingSchema = new Schema<Finding>(
   {
     ruleId: { type: String, required: true, index: true },
@@ -45,14 +54,7 @@ const FindingSchema = new Schema<Finding>(
     messageParams: { type: Schema.Types.Mixed },
     fixKey: { type: String, required: true },
     fixParams: { type: Schema.Types.Mixed },
-    codeSnippet: {
-      type: {
-        startLine: { type: Number, required: true },
-        focusLine: { type: Number, required: true },
-        lines: { type: [String], default: [] },
-      },
-      default: undefined,
-    },
+    codeSnippet: { type: CodeSnippetSchema, default: undefined },
   },
   { _id: false },
 );

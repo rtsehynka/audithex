@@ -2,7 +2,7 @@
   "_id": "R001",
   "schemaVersion": "0.1",
   "severity": "critical",
-  "owasp": ["LLM06"],
+  "owasp": ["LLM02"],
   "cwe": "CWE-798",
   "engine": "regex-in-code",
   "params": {

@@ -1,0 +1,35 @@
+{
+  "_id": "R014",
+  "schemaVersion": "0.1",
+  "severity": "medium",
+  "owasp": ["LLM03"],
+  "engine": "regex-in-code",
+  "params": {
+    "languages": ["plain-text"],
+    "skipComments": false,
+    "inlinePatterns": [
+      {
+        "id": "package-json-typosquat",
+        "languages": ["plain-text"],
+        "regex": "\"(anthropi|anthopic|antropic|openi|openaiv2|openai-sdk|opena1|cohereai-sdk|langchain-extras|langchian|langchaln|llama-index-sdk|huggingface-sdk|huggingfacehub|gpt-3|gpt3-sdk|claudeai|claude-sdk|llamaindex-sdk)\"\\s*:\\s*\"[\\^~>=<*0-9.\\-A-Za-z]+\"",
+        "messageParamKind": "typosquatted dependency in package.json"
+      },
+      {
+        "id": "requirements-typosquat",
+        "languages": ["plain-text"],
+        "regex": "^\\s*(anthropi|anthopic|antropic|openi|openaiv2|opena1|cohereai-sdk|langchian|langchaln|llama-index-sdk|huggingface-sdk|gpt-3|gpt3-sdk|claudeai|claude-sdk)\\s*(?:==|>=|<=|~=|!=|<|>|$)",
+        "messageParamKind": "typosquatted dependency in requirements.txt"
+      }
+    ]
+  },
+  "messageKey": "findings:R014.message",
+  "fixKey": "findings:R014.fix",
+  "meta": {
+    "title": "Typosquatted LLM-related dependency",
+    "category": "supply-chain",
+    "references": [
+      "https://genai.owasp.org/llmrisk/llm03-supply-chain/",
+      "https://socket.dev/blog/category/typosquatting"
+    ]
+  }
+}

@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { isAbsolute, join } from 'node:path';
 import {
   type ScanRunDocument,
   countScanRuns,
@@ -137,28 +139,67 @@ export async function getScan(id: string): Promise<ScanRunDetail | null> {
     audithexVersion: doc.audithexVersion,
     fingerprint: doc.fingerprint,
     discovery: doc.discovery,
-    findings: doc.findings.map((f) => ({
-      ruleId: f.ruleId,
-      severity: f.severity,
-      owasp: [...f.owasp],
-      ...(f.cwe ? { cwe: f.cwe } : {}),
-      file: f.location.file,
-      line: f.location.line,
-      ...(typeof f.location.column === 'number' ? { column: f.location.column } : {}),
-      messageKey: f.messageKey,
-      ...(f.messageParams ? { messageParams: { ...f.messageParams } } : {}),
-      fixKey: f.fixKey,
-      ...(f.codeSnippet
+    findings: doc.findings.map((f) => {
+      const snippet = f.codeSnippet
         ? {
-            codeSnippet: {
-              startLine: f.codeSnippet.startLine,
-              focusLine: f.codeSnippet.focusLine,
-              lines: [...f.codeSnippet.lines],
-            },
+            startLine: f.codeSnippet.startLine,
+            focusLine: f.codeSnippet.focusLine,
+            lines: [...f.codeSnippet.lines],
           }
-        : {}),
-    })),
+        : reReadSnippet(doc.rootPath, f.location.file, f.location.line);
+      return {
+        ruleId: f.ruleId,
+        severity: f.severity,
+        owasp: [...f.owasp],
+        ...(f.cwe ? { cwe: f.cwe } : {}),
+        file: f.location.file,
+        line: f.location.line,
+        ...(typeof f.location.column === 'number' ? { column: f.location.column } : {}),
+        messageKey: f.messageKey,
+        ...(f.messageParams ? { messageParams: { ...f.messageParams } } : {}),
+        fixKey: f.fixKey,
+        ...(snippet ? { codeSnippet: snippet } : {}),
+      };
+    }),
   };
+}
+
+/**
+ * Fallback: if a finding was persisted without a codeSnippet (older
+ * scan written before U12, or a save that dropped the field), re-read
+ * the source file off disk at request time. Cached per request via
+ * the simple module-level Map so a scan with N findings in the same
+ * file only reads it once.
+ *
+ * Skips synthetic db:// locations and any file we can't open. The
+ * scan-detail page renders the snippet conditionally, so a missing
+ * one is invisible to the user — not an error.
+ */
+const RE_READ_CONTEXT = 3;
+const RE_READ_MAX_LINE_BYTES = 800;
+
+function reReadSnippet(
+  rootPath: string,
+  fileRef: string,
+  focusLine: number,
+): { startLine: number; focusLine: number; lines: string[] } | undefined {
+  if (!fileRef || fileRef.startsWith('db://')) return undefined;
+  const absolute = isAbsolute(fileRef) ? fileRef : join(rootPath, fileRef);
+  let content: string;
+  try {
+    content = readFileSync(absolute, 'utf8');
+  } catch {
+    return undefined;
+  }
+  const lines = content.split(/\r?\n/);
+  const focus = Math.max(1, focusLine);
+  const startLine = Math.max(1, focus - RE_READ_CONTEXT);
+  const endLine = Math.min(lines.length, focus + RE_READ_CONTEXT);
+  if (startLine > endLine) return undefined;
+  const slice = lines
+    .slice(startLine - 1, endLine)
+    .map((l) => (l.length > RE_READ_MAX_LINE_BYTES ? `${l.slice(0, RE_READ_MAX_LINE_BYTES)}…` : l));
+  return { startLine, focusLine: focus, lines: slice };
 }
 
 function toSummary(

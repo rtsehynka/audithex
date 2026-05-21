@@ -66,6 +66,26 @@ export async function requestFixFromLlm(input: RequestFixInput): Promise<FixLlmR
   const prompt = buildPrompt(input);
   const env = loadWebEnv();
 
+  // A real provider configured on /settings/ai (saved in Mongo) wins
+  // over AUDITHEX_LLM_DRY_RUN. The dry-run env knob is meant for CI /
+  // screenshot pipelines that have no key — once the user wires up a
+  // key via the UI we honour it instead of returning canned text.
+  const settings = await resolveSettings();
+  if (settings) {
+    switch (settings.provider) {
+      case 'anthropic':
+        return callAnthropic(settings, prompt);
+      case 'openai':
+        return callOpenAi(settings, prompt);
+      case 'gemini':
+        return callGemini(settings, prompt);
+      default: {
+        const _exhaustive: never = settings.provider;
+        throw new Error(`Unsupported provider: ${String(_exhaustive)}`);
+      }
+    }
+  }
+
   if (env.AUDITHEX_LLM_DRY_RUN) {
     return {
       provider: 'dry-run',
@@ -78,33 +98,19 @@ export async function requestFixFromLlm(input: RequestFixInput): Promise<FixLlmR
     };
   }
 
-  const settings = await resolveSettings();
-  if (!settings) {
-    // No Mongo settings AND no env key — return the canned answer so
-    // the UI doesn't break, but tag the response as `unconfigured`.
-    return {
-      provider: 'unconfigured',
-      model: env.AUDITHEX_LLM_MODEL,
-      costUsd: 0,
-      inputTokens: estimateTokens(prompt),
-      outputTokens: 120,
-      prompt,
-      response: cannedResponseFor(input),
-    };
-  }
-
-  switch (settings.provider) {
-    case 'anthropic':
-      return callAnthropic(settings, prompt);
-    case 'openai':
-      return callOpenAi(settings, prompt);
-    case 'gemini':
-      return callGemini(settings, prompt);
-    default: {
-      const _exhaustive: never = settings.provider;
-      throw new Error(`Unsupported provider: ${String(_exhaustive)}`);
-    }
-  }
+  // No Mongo settings, no env key, no dry-run — return the canned
+  // answer so the UI doesn't break, but tag it as `unconfigured` so
+  // the cache layer knows not to store it and the user sees the
+  // pointer to /settings/ai.
+  return {
+    provider: 'unconfigured',
+    model: env.AUDITHEX_LLM_MODEL,
+    costUsd: 0,
+    inputTokens: estimateTokens(prompt),
+    outputTokens: 120,
+    prompt,
+    response: cannedResponseFor(input),
+  };
 }
 
 export async function estimateCostUsd(input: RequestFixInput): Promise<number> {

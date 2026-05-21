@@ -45,6 +45,7 @@ function extractFromAst(input: ExtractorInput): DiscoveryArtifact[] {
         framework: tool.framework,
         hasDescription: tool.hasDescription,
         hasSchema: tool.hasSchema,
+        requiresApproval: tool.requiresApproval,
         language: input.language.id,
       },
     });
@@ -56,7 +57,24 @@ interface AstToolShape {
   framework: 'openai' | 'anthropic';
   hasDescription: boolean;
   hasSchema: boolean;
+  /**
+   * True when the tool definition explicitly carries an approval /
+   * human-in-the-loop gate (`requiresApproval: true`, `humanInTheLoop`,
+   * `confirmation`, `approval_required`, `needs_approval`). Used by
+   * R016 to spot destructive-named tools without a guard.
+   */
+  requiresApproval: boolean;
 }
+
+/** Property names treated as "needs human approval before invocation." */
+const APPROVAL_FLAG_KEYS = [
+  'requiresApproval',
+  'humanInTheLoop',
+  'confirmation',
+  'approval_required',
+  'needs_approval',
+  'confirm_before_use',
+];
 
 function inspectObjectLiteral(obj: ts.ObjectLiteralExpression): AstToolShape | null {
   const props = collectKnownProperties(obj);
@@ -70,6 +88,7 @@ function inspectObjectLiteral(obj: ts.ObjectLiteralExpression): AstToolShape | n
       framework: 'openai',
       hasDescription: typeof inner.description === 'string' && inner.description.length > 0,
       hasSchema,
+      requiresApproval: objectHasApprovalFlag(props.functionBody) || objectHasApprovalFlag(obj),
     };
   }
   if (props.name && props.inputSchemaBody) {
@@ -78,9 +97,22 @@ function inspectObjectLiteral(obj: ts.ObjectLiteralExpression): AstToolShape | n
       framework: 'anthropic',
       hasDescription: typeof props.description === 'string' && props.description.length > 0,
       hasSchema: objectHasProperty(props.inputSchemaBody, 'properties'),
+      requiresApproval: objectHasApprovalFlag(obj),
     };
   }
   return null;
+}
+
+function objectHasApprovalFlag(obj: ts.ObjectLiteralExpression): boolean {
+  for (const prop of obj.properties) {
+    if (!ts.isPropertyAssignment(prop)) continue;
+    const key = propertyName(prop);
+    if (!key || !APPROVAL_FLAG_KEYS.includes(key)) continue;
+    if (prop.initializer.kind === ts.SyntaxKind.TrueKeyword) return true;
+    const t = literalText(prop.initializer);
+    if (typeof t === 'string' && t.length > 0 && t.toLowerCase() !== 'false') return true;
+  }
+  return false;
 }
 
 interface CollectedProps {
@@ -164,6 +196,9 @@ function findShape(
       framework === 'openai'
         ? /"parameters"\s*:\s*\{[\s\S]*?"properties"\s*:/.test(body)
         : /"input_schema"\s*:\s*\{[\s\S]*?"properties"\s*:/.test(body);
+    const requiresApproval = APPROVAL_FLAG_KEYS.some((k) =>
+      new RegExp(`"${k}"\\s*:\\s*(?:true|"true"|1)\\b`).test(body),
+    );
 
     const { line, column } = offsetToLineColumn(input.content, matchIndex);
     out.push({
@@ -181,6 +216,7 @@ function findShape(
         framework,
         hasDescription,
         hasSchema,
+        requiresApproval,
         language: input.language.id,
       },
     });

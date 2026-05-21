@@ -13,16 +13,55 @@ The scanner is polyglot. It ships native TypeScript Compiler API parsers for `.t
 - **CLI commands:** `scan`, `update`, `selftest`, `history`, `ui`, `user`, `init`, `version`
 - **Optional MongoDB persistence** — point `MONGODB_URI` at any Mongo and every scan is saved to the `scan_runs` collection for review through `audithex history` and the local web UI. The CLI runs fully without MongoDB; persistence is purely opt-in.
 - **Local web UI** — `audithex ui` boots a single-user dashboard on `http://localhost:7777` (Next.js 16 + React 19 + Tailwind 3, bcrypt-signed cookie auth, Cypress-covered). Includes scan history, finding detail, scan-to-scan diff, read-only settings, **on-demand "Explain how to fix" answers from Claude** (cached in Mongo), and **one-click PDF export** of any scan.
-- **10 rules (R001 – R010)** covering OWASP LLM02, LLM06, LLM07, LLM08, mapped to CWE-22, 78, 79, 89, 94, 798, 918
+- **16 rules (R001 – R016)** covering OWASP LLM01, LLM02, LLM03, LLM05, LLM06, LLM07, LLM10, mapped to CWE-22, 78, 79, 89, 94, 502, 798, 918 — see the coverage table below
 - **20 secret patterns** for OpenAI, Anthropic, Google, Cohere, Mistral, Hugging Face, Replicate, GitHub, GitLab, Slack, Discord, AWS, Stripe, Twilio, SendGrid
 - **3 rule engines:** `regex-in-code`, `regex-in-prompt`, `artifact-property`
 - **6 extractors:** SDK imports, model strings, system prompts, tool definitions, RAG config, secret candidates
-- **AST-confidence detection** for `.ts/.tsx/.js/.jsx/.mjs/.cjs` (SDK imports, tool literals, code-embedded system prompts); regex-confidence for every other language
-- **Self-evaluating engine** with a `fixture-banking-bot` ground-truth fixture (10 expected findings, precision ≥ 0.95, recall ≥ 0.9)
+- **AST-confidence detection** for `.ts/.tsx/.js/.jsx/.mjs/.cjs` SDK imports, tool literals, and code-embedded system prompts. Rule evaluation itself is regex-based — full data-flow / taint analysis is on the roadmap.
+- **Package-scoped AI gating** — web-vulnerability rules (R005 eval, R006 file-write, R007 exec, R008 fetch, R009 SQL, R010 innerHTML) fire only inside npm packages that contain at least one LLM SDK import, so generic SSRF/XSS in unrelated code does not produce LLM05 findings.
+- **Inline suppression pragmas** — `// audithex-ignore-line`, `// audithex-ignore-next-line`, `// audithex-ignore: R008, R010` for the handful of cases that legitimately need a single-line waiver.
+- **Self-evaluating engine** with a `fixture-banking-bot` ground-truth fixture (16 expected findings, precision ≥ 0.95, recall ≥ 0.9)
 - **Git-based rules-pack update channel** with `git pull --ff-only` and `git reset --hard` rollback when the new pack's selftest fails
 - **Console, JSON, and Markdown reports** with deterministic CI exit codes
 - **English and Ukrainian UI** in full key parity
 - **0 jscpd code-clone duplication** enforced in CI
+
+---
+
+## OWASP LLM Top 10 (2025) coverage
+
+| OWASP category | Coverage | Rules |
+|---|---|---|
+| LLM01 Prompt Injection | covered | R011 |
+| LLM02 Sensitive Information Disclosure | partial — API key literals only | R001 |
+| LLM03 Supply Chain | partial — pickle / `torch.load` / typosquats | R013, R014 |
+| LLM04 Data and Model Poisoning | not covered (mostly a process / data-curation concern) | — |
+| LLM05 Improper Output Handling | covered, package-scoped via `requiresAiContext` | R005, R006, R007, R008, R009, R010 |
+| LLM06 Excessive Agency | covered — tool design + destructive-verb gating | R003, R004, R016 |
+| LLM07 System Prompt Leakage | covered — credentials and schema dumps inside prompts | R002, R012 |
+| LLM08 Vector and Embedding Weaknesses | not covered | — |
+| LLM09 Misinformation | not covered (runtime / behavioural concern, not lintable) | — |
+| LLM10 Unbounded Consumption | covered — `messages.create` without `max_tokens` | R015 |
+
+Rules in the LLM05 row are package-scoped by default: each one ships with `"requiresAiContext": true` in its `params`, so the rule fires only in npm packages whose code imports an LLM SDK. If a project hand-rolls its own HTTP client to an LLM endpoint (no SDK import in source), audithex will not consider those packages AI-context. The roadmap entry to detect raw provider HTTP calls is tracked separately.
+
+## Silencing a finding
+
+When a rule fires on a usage you already know is safe, attach one of three pragmas. The pragma keyword must appear inside a comment — language does not matter (`//`, `#`, `/* */` all work).
+
+```ts
+// All rules on this line — leaves stylelint and ESLint alone:
+return fetch(`/api/storefront/wishlist/${encodeURIComponent(sku)}`); // audithex-ignore-line
+
+// Suppress only the next non-blank line:
+// audithex-ignore-next-line
+return fetch(`/api/${id}`);
+
+// Suppress a specific rule (or several) — other rules still report on the same line:
+element.innerHTML = STATIC_CSS; // audithex-ignore: R010
+```
+
+Use pragmas sparingly. The combination of `requiresAiContext` (package gating) and inline pragmas is meant to keep audithex quiet without ignoring the genuine LLM05 surface — over-silencing is a regression, not a win.
 
 ---
 

@@ -23,6 +23,9 @@ export interface ProjectView {
   description: string | null;
   severityOverrides: Record<string, Severity>;
   disabledRuleIds: string[];
+  disabledOwaspGroups: string[];
+  languages: string[];
+  extraExtensions: string[];
   dbConnection: ProjectDbConnection | null;
   dbTables: string[];
   dbScanAllTables: boolean;
@@ -56,6 +59,9 @@ export interface CreateProjectFromUiInput {
   description: string | null;
   severityOverrides: Record<string, Severity>;
   disabledRuleIds: string[];
+  disabledOwaspGroups?: string[];
+  languages?: string[];
+  extraExtensions?: string[];
   dbConnection?: ProjectDbConnection | null;
   dbTables?: string[];
   dbScanAllTables?: boolean;
@@ -100,6 +106,9 @@ function toView(doc: {
   description?: string | null;
   severityOverrides?: Record<string, Severity>;
   disabledRuleIds?: string[];
+  disabledOwaspGroups?: string[];
+  languages?: string[];
+  extraExtensions?: string[];
   dbConnection?: ProjectDbConnection | null;
   dbTables?: string[];
   dbScanAllTables?: boolean;
@@ -113,6 +122,9 @@ function toView(doc: {
     description: doc.description ?? null,
     severityOverrides: doc.severityOverrides ?? {},
     disabledRuleIds: [...(doc.disabledRuleIds ?? [])],
+    disabledOwaspGroups: [...(doc.disabledOwaspGroups ?? [])],
+    languages: [...(doc.languages ?? [])],
+    extraExtensions: [...(doc.extraExtensions ?? [])],
     dbConnection: doc.dbConnection
       ? {
           driver: doc.dbConnection.driver,

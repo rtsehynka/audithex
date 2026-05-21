@@ -1,0 +1,55 @@
+{
+  "_id": "R015",
+  "schemaVersion": "0.1",
+  "severity": "medium",
+  "owasp": ["LLM10", "LLM05"],
+  "engine": "regex-in-code",
+  "params": {
+    "languages": ["typescript", "javascript", "python"],
+    "skipComments": true,
+    "inlinePatterns": [
+      {
+        "id": "js-anthropic-no-max-tokens",
+        "languages": ["typescript", "javascript"],
+        "multiline": true,
+        "regex": "anthropic\\.messages\\.create\\s*\\(\\s*\\{(?:(?!max_tokens|max_output_tokens)[\\s\\S]){0,800}?\\}\\s*\\)",
+        "messageParamKind": "anthropic.messages.create without max_tokens"
+      },
+      {
+        "id": "js-openai-no-max-tokens",
+        "languages": ["typescript", "javascript"],
+        "multiline": true,
+        "regex": "openai\\.(?:chat\\.completions|completions|responses)\\.create\\s*\\(\\s*\\{(?:(?!max_tokens|max_output_tokens|max_completion_tokens)[\\s\\S]){0,800}?\\}\\s*\\)",
+        "messageParamKind": "openai.*.create without max_tokens"
+      },
+      {
+        "id": "js-gemini-no-max-output-tokens",
+        "languages": ["typescript", "javascript"],
+        "multiline": true,
+        "regex": "\\.generateContent\\s*\\(\\s*\\{(?:(?!maxOutputTokens|max_output_tokens|maxTokens)[\\s\\S]){0,800}?\\}\\s*\\)",
+        "messageParamKind": "model.generateContent without maxOutputTokens"
+      },
+      {
+        "id": "py-anthropic-no-max-tokens",
+        "languages": ["python"],
+        "multiline": true,
+        "regex": "anthropic\\.(?:Anthropic|Client)\\(\\)\\.messages\\.create\\s*\\((?:(?!max_tokens|max_output_tokens)[\\s\\S]){0,800}?\\)",
+        "messageParamKind": "anthropic Python client without max_tokens"
+      },
+      {
+        "id": "py-openai-no-max-tokens",
+        "languages": ["python"],
+        "multiline": true,
+        "regex": "client\\.chat\\.completions\\.create\\s*\\((?:(?!max_tokens|max_output_tokens|max_completion_tokens)[\\s\\S]){0,800}?\\)",
+        "messageParamKind": "OpenAI Python client without max_tokens"
+      }
+    ]
+  },
+  "messageKey": "findings:R015.message",
+  "fixKey": "findings:R015.fix",
+  "meta": {
+    "title": "LLM API call without an output-token cap",
+    "category": "unbounded-consumption",
+    "references": ["https://genai.owasp.org/llmrisk/llm10-unbounded-consumption/"]
+  }
+}

@@ -314,6 +314,7 @@ export interface CreateProjectInput {
   disabledRuleIds?: string[];
   languages?: string[];
   extraExtensions?: string[];
+  disabledOwaspGroups?: string[];
   dbConnection?: ProjectDbConnection | null;
   dbTables?: string[];
   dbScanAllTables?: boolean;
@@ -336,6 +337,7 @@ export async function createProject(
     disabledRuleIds: input.disabledRuleIds ?? [],
     languages: input.languages ?? [],
     extraExtensions: (input.extraExtensions ?? []).map((e) => e.toLowerCase()),
+    disabledOwaspGroups: input.disabledOwaspGroups ?? [],
     dbConnection: input.dbConnection ?? null,
     dbTables: input.dbTables ?? [],
     dbScanAllTables: input.dbScanAllTables ?? false,
@@ -347,6 +349,7 @@ export async function createProject(
     disabledRuleIds: doc.disabledRuleIds ?? [],
     languages: doc.languages ?? [],
     extraExtensions: doc.extraExtensions ?? [],
+    disabledOwaspGroups: doc.disabledOwaspGroups ?? [],
     dbTables: doc.dbTables ?? [],
     dbScanAllTables: doc.dbScanAllTables ?? false,
   };

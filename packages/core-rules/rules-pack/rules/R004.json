@@ -2,7 +2,7 @@
   "_id": "R004",
   "schemaVersion": "0.1",
   "severity": "high",
-  "owasp": ["LLM07"],
+  "owasp": ["LLM06"],
   "engine": "artifact-property",
   "params": {
     "artifactKind": "tool-definition",

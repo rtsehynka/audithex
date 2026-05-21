@@ -1,0 +1,36 @@
+{
+  "_id": "R011",
+  "schemaVersion": "0.1",
+  "severity": "high",
+  "owasp": ["LLM01"],
+  "cwe": "CWE-94",
+  "engine": "regex-in-code",
+  "params": {
+    "languages": ["typescript", "javascript", "python"],
+    "skipComments": true,
+    "inlinePatterns": [
+      {
+        "id": "js-user-input-in-system-prompt",
+        "languages": ["typescript", "javascript"],
+        "regex": "`[^`]*(?:[Ss]ystem|[Ii]nstructions?|[Yy]ou are)[^`]*\\$\\{\\s*(?:userInput|userMessage|userQuery|userPrompt|user_input|user_message|input|query|prompt|message|userText)\\s*\\}[^`]*`",
+        "messageParamKind": "user input interpolated into prompt template without boundary tags"
+      },
+      {
+        "id": "py-user-input-in-system-prompt",
+        "languages": ["python"],
+        "regex": "(?:f\"|f')[^\"'\\n]*(?:[Ss]ystem|[Ii]nstructions?|[Yy]ou are)[^\"'\\n]*\\{\\s*(?:user_input|user_message|user_query|user_prompt|input|query|prompt|message)\\s*\\}",
+        "messageParamKind": "f-string user input interpolated into prompt template without boundary tags"
+      }
+    ]
+  },
+  "messageKey": "findings:R011.message",
+  "fixKey": "findings:R011.fix",
+  "meta": {
+    "title": "Raw user input interpolated into a system prompt without boundary tags",
+    "category": "prompt-injection",
+    "references": [
+      "https://genai.owasp.org/llmrisk/llm01-prompt-injection/",
+      "https://simonwillison.net/tags/prompt-injection/"
+    ]
+  }
+}

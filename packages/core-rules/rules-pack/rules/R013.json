@@ -1,0 +1,49 @@
+{
+  "_id": "R013",
+  "schemaVersion": "0.1",
+  "severity": "critical",
+  "owasp": ["LLM03"],
+  "cwe": "CWE-502",
+  "engine": "regex-in-code",
+  "params": {
+    "languages": ["python"],
+    "skipComments": true,
+    "inlinePatterns": [
+      {
+        "id": "py-torch-load-unsafe",
+        "languages": ["python"],
+        "regex": "\\btorch\\.load\\s*\\([^)]*\\)(?![^)]*weights_only\\s*=\\s*True)",
+        "messageParamKind": "torch.load() without weights_only=True"
+      },
+      {
+        "id": "py-pickle-loads",
+        "languages": ["python"],
+        "regex": "\\b(?:pickle|cPickle)\\.loads?\\s*\\(",
+        "messageParamKind": "pickle.load(s) — arbitrary code execution surface"
+      },
+      {
+        "id": "py-pickle-unpickler",
+        "languages": ["python"],
+        "regex": "\\b(?:pickle|cPickle)\\.Unpickler\\s*\\(",
+        "messageParamKind": "pickle.Unpickler — arbitrary code execution surface"
+      },
+      {
+        "id": "py-dill-loads",
+        "languages": ["python"],
+        "regex": "\\bdill\\.loads?\\s*\\(",
+        "messageParamKind": "dill.load(s) — arbitrary code execution surface"
+      }
+    ]
+  },
+  "messageKey": "findings:R013.message",
+  "fixKey": "findings:R013.fix",
+  "meta": {
+    "title": "Unsafe pickle / torch.load deserialization",
+    "category": "supply-chain",
+    "references": [
+      "https://genai.owasp.org/llmrisk/llm03-supply-chain/",
+      "https://github.com/trailofbits/fickling",
+      "https://pytorch.org/docs/stable/generated/torch.load.html"
+    ]
+  }
+}

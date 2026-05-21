@@ -61,6 +61,42 @@
       "file": "src/ui/render.ts",
       "line": 3,
       "rationale": "Direct .innerHTML assignment from an untrusted string."
+    },
+    {
+      "ruleId": "R011",
+      "file": "src/llm-call.ts",
+      "line": 16,
+      "rationale": "Raw `userInput` interpolated into a 'system:' template literal without <user_input> boundary tags."
+    },
+    {
+      "ruleId": "R012",
+      "file": "prompts/credential-leak.md",
+      "line": 1,
+      "rationale": "System prompt contains a hardcoded password, schema dump, and INTERNAL/CONFIDENTIAL markers."
+    },
+    {
+      "ruleId": "R013",
+      "file": "src/ml/load_model.py",
+      "line": 11,
+      "rationale": "torch.load() without weights_only=True allows arbitrary code execution from a malicious model file."
+    },
+    {
+      "ruleId": "R014",
+      "file": "package.json",
+      "line": 7,
+      "rationale": "Dependency name 'anthropi' is a typosquat of 'anthropic' — install hooks may steal API keys."
+    },
+    {
+      "ruleId": "R015",
+      "file": "src/llm-call.ts",
+      "line": 17,
+      "rationale": "anthropic.messages.create({...}) call with no max_tokens — output is unbounded, draining the token budget."
+    },
+    {
+      "ruleId": "R016",
+      "file": "tools/anthropic-tools.json",
+      "line": 4,
+      "rationale": "Tool 'transfer_funds' has a destructive verb in its name and no requiresApproval / humanInTheLoop flag."
     }
   ],
   "notExpected": []

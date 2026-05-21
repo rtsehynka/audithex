@@ -1,0 +1,29 @@
+{
+  "_id": "R016",
+  "schemaVersion": "0.1",
+  "severity": "high",
+  "owasp": ["LLM06"],
+  "engine": "artifact-property",
+  "params": {
+    "artifactKind": "tool-definition",
+    "predicate": {
+      "allOf": [
+        {
+          "field": "detail.toolName",
+          "matches": "^(?:delete|drop|remove|send|transfer|execute|run|destroy|wipe|reset|kill|terminate|purge|nuke)"
+        },
+        {
+          "field": "detail.requiresApproval",
+          "notEquals": true
+        }
+      ]
+    }
+  },
+  "messageKey": "findings:R016.message",
+  "fixKey": "findings:R016.fix",
+  "meta": {
+    "title": "Destructive-named tool without an approval gate",
+    "category": "excessive-agency",
+    "references": ["https://genai.owasp.org/llmrisk/llm06-excessive-agency/"]
+  }
+}

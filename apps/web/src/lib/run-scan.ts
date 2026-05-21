@@ -106,6 +106,9 @@ export async function* runProjectScan(projectId: string): AsyncGenerator<ScanRun
     rulesPack: pack,
     severityOverrides: project.severityOverrides,
     disabledRuleIds: project.disabledRuleIds,
+    ...(project.disabledOwaspGroups && project.disabledOwaspGroups.length > 0
+      ? { disabledOwaspGroups: project.disabledOwaspGroups }
+      : {}),
     onRuleEvaluated: (e) => {
       events.push({
         type: 'rule',

@@ -75,6 +75,9 @@ export function registerScanCommand(program: Command, env: AudithexEnv): void {
           ? {
               severityOverrides: project.severityOverrides,
               disabledRuleIds: project.disabledRuleIds,
+              ...(project.disabledOwaspGroups && project.disabledOwaspGroups.length > 0
+                ? { disabledOwaspGroups: project.disabledOwaspGroups }
+                : {}),
             }
           : {}),
       });

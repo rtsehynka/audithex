@@ -5,10 +5,10 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadBundledRulesPack, loadRulesPack } from './loader.js';
 
 describe('loadBundledRulesPack', () => {
-  it('returns the bundled pack with all 10 starter rules', () => {
+  it('returns the bundled pack with all 16 starter rules', () => {
     const pack = loadBundledRulesPack();
     expect(pack.source).toBe('bundled');
-    expect(pack.rules).toHaveLength(10);
+    expect(pack.rules).toHaveLength(16);
     const ids = pack.rules.map((r) => r._id).sort();
     expect(ids).toEqual([
       'R001',
@@ -21,6 +21,12 @@ describe('loadBundledRulesPack', () => {
       'R008',
       'R009',
       'R010',
+      'R011',
+      'R012',
+      'R013',
+      'R014',
+      'R015',
+      'R016',
     ]);
   });
 

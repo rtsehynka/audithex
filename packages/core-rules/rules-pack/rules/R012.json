@@ -1,0 +1,18 @@
+{
+  "_id": "R012",
+  "schemaVersion": "0.1",
+  "severity": "medium",
+  "owasp": ["LLM07"],
+  "engine": "regex-in-prompt",
+  "params": {
+    "patternBundleId": "prompt-leak-indicators-v1",
+    "patternTagWhitelist": ["prompt-leak"]
+  },
+  "messageKey": "findings:R012.message",
+  "fixKey": "findings:R012.fix",
+  "meta": {
+    "title": "System prompt contains credentials, internal markers, or schema dump",
+    "category": "system-prompt-leakage",
+    "references": ["https://genai.owasp.org/llmrisk/llm07-system-prompt-leakage/"]
+  }
+}

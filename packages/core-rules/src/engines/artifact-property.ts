@@ -1,22 +1,36 @@
 import type { ArtifactKind, DiscoveryArtifact, Finding, RuleDocument } from '@audithex/core-types';
 import type { EngineContext, RuleEngine } from './types.js';
 
+interface SinglePredicate {
+  field: string;
+  equals?: unknown;
+  notEquals?: unknown;
+  in?: unknown[];
+  matches?: string;
+}
+
+interface PredicateAllOf {
+  allOf: SinglePredicate[];
+}
+
+type Predicate = SinglePredicate | PredicateAllOf;
+
 interface ArtifactPropertyParams {
   artifactKind: ArtifactKind;
-  predicate: {
-    field: string;
-    equals?: unknown;
-    notEquals?: unknown;
-    in?: unknown[];
-    matches?: string;
-  };
+  predicate: Predicate;
 }
 
 /**
  * Engine that walks `discovery.artifacts`, picks the requested kind,
- * and emits a finding for every artifact whose nested `field` (dotted
- * path against the artifact object — including `detail.*`) satisfies
- * the predicate.
+ * and emits a finding for every artifact whose `predicate` matches.
+ *
+ * Predicate shapes:
+ *   - single: { field: "detail.x", equals: y }
+ *   - composite: { allOf: [singlePredicate, singlePredicate, …] }
+ *
+ * `allOf` is used by rules like R016 (destructive tool name AND no
+ * approval flag) that need to combine two conditions on the same
+ * artifact.
  */
 export const artifactPropertyEngine: RuleEngine = {
   kind: 'artifact-property',
@@ -24,12 +38,11 @@ export const artifactPropertyEngine: RuleEngine = {
     const params = rule.params as unknown as ArtifactPropertyParams;
     if (!params.artifactKind || !params.predicate) return [];
     const findings: Finding[] = [];
-    const matchRegex = params.predicate.matches ? safeRegex(params.predicate.matches) : null;
+    const compiled = compile(params.predicate);
 
     for (const artifact of ctx.discovery.artifacts) {
       if (artifact.kind !== params.artifactKind) continue;
-      const value = getByPath(artifact, params.predicate.field);
-      if (!predicateMatches(value, params.predicate, matchRegex)) continue;
+      if (!compiled.matches(artifact)) continue;
       findings.push({
         ruleId: rule._id,
         severity: rule.severity,
@@ -44,6 +57,29 @@ export const artifactPropertyEngine: RuleEngine = {
     return findings;
   },
 };
+
+interface CompiledPredicate {
+  matches: (artifact: DiscoveryArtifact) => boolean;
+}
+
+function compile(predicate: Predicate): CompiledPredicate {
+  if ('allOf' in predicate) {
+    const compiledChildren = predicate.allOf.map(compileSingle);
+    return {
+      matches: (artifact) => compiledChildren.every((c) => c(artifact)),
+    };
+  }
+  const single = compileSingle(predicate);
+  return { matches: single };
+}
+
+function compileSingle(predicate: SinglePredicate): (artifact: DiscoveryArtifact) => boolean {
+  const matchRegex = predicate.matches ? safeRegex(predicate.matches) : null;
+  return (artifact) => {
+    const value = getByPath(artifact, predicate.field);
+    return predicateMatches(value, predicate, matchRegex);
+  };
+}
 
 function extractMessageParams(artifact: DiscoveryArtifact): Record<string, string | number> {
   const params: Record<string, string | number> = {};
@@ -69,7 +105,7 @@ function extractMessageParams(artifact: DiscoveryArtifact): Record<string, strin
 
 function predicateMatches(
   value: unknown,
-  predicate: ArtifactPropertyParams['predicate'],
+  predicate: SinglePredicate,
   matchRegex: RegExp | null,
 ): boolean {
   if (predicate.equals !== undefined) {

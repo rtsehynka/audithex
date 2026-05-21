@@ -2,12 +2,13 @@
   "_id": "R005",
   "schemaVersion": "0.1",
   "severity": "critical",
-  "owasp": ["LLM02", "LLM08"],
+  "owasp": ["LLM05"],
   "cwe": "CWE-94",
   "engine": "regex-in-code",
   "params": {
     "languages": ["typescript", "javascript", "python", "php", "ruby"],
     "skipComments": true,
+    "requiresAiContext": true,
     "inlinePatterns": [
       {
         "id": "js-eval-call",

@@ -46,6 +46,13 @@ export interface ProjectDocument {
    */
   languages: string[];
   /**
+   * OWASP LLM Top 10 category IDs (LLM01..LLM10) the user has turned
+   * OFF for this project. A rule is skipped iff EVERY entry in its
+   * `owasp[]` is in this list. By default the array is empty, which
+   * means every category is enabled — the user opts out per group.
+   */
+  disabledOwaspGroups: string[];
+  /**
    * Free-form extra extensions to include beyond what the language
    * registry knows about (e.g. `.tf`, `.yml`). Includes the leading
    * dot; lower-cased on persist.
@@ -76,6 +83,7 @@ const ProjectSchema = new Schema<ProjectDocument>(
     disabledRuleIds: { type: [String], default: [] },
     languages: { type: [String], default: [] },
     extraExtensions: { type: [String], default: [] },
+    disabledOwaspGroups: { type: [String], default: [] },
     dbConnection: { type: DbConnectionSchema, default: null },
     dbTables: { type: [String], default: [] },
     dbScanAllTables: { type: Boolean, default: false },

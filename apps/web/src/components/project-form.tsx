@@ -80,6 +80,8 @@ export default function ProjectForm({ initial, submitLabel, action, rules }: Pro
         error={fieldError('description')}
       />
 
+      <ScanScopeSection initial={initial} />
+
       <section data-testid="project-rules" className="flex flex-col gap-2">
         <header className="flex items-baseline justify-between">
           <span className="text-sm text-[#d4d4d4]">Rules</span>
@@ -363,5 +365,112 @@ function SeverityTag({ severity }: { severity: Severity }): ReactElement {
     >
       {severity}
     </span>
+  );
+}
+
+const OWASP_GROUPS: { id: string; title: string; requiresAiKey: boolean }[] = [
+  { id: 'LLM01', title: 'Prompt Injection', requiresAiKey: false },
+  { id: 'LLM02', title: 'Sensitive Information Disclosure', requiresAiKey: false },
+  { id: 'LLM03', title: 'Supply Chain', requiresAiKey: false },
+  { id: 'LLM04', title: 'Data and Model Poisoning (future)', requiresAiKey: false },
+  { id: 'LLM05', title: 'Improper Output Handling', requiresAiKey: false },
+  { id: 'LLM06', title: 'Excessive Agency', requiresAiKey: false },
+  { id: 'LLM07', title: 'System Prompt Leakage', requiresAiKey: false },
+  { id: 'LLM08', title: 'Vector and Embedding Weaknesses (future)', requiresAiKey: false },
+  { id: 'LLM09', title: 'Misinformation (future, AI-eval based)', requiresAiKey: true },
+  { id: 'LLM10', title: 'Unbounded Consumption', requiresAiKey: false },
+];
+
+const KNOWN_LANGUAGES = [
+  'typescript',
+  'javascript',
+  'python',
+  'php',
+  'go',
+  'java',
+  'ruby',
+  'plain-text',
+];
+
+function ScanScopeSection({ initial }: { initial?: ProjectView | null }): ReactElement {
+  const disabledGroups = new Set(initial?.disabledOwaspGroups ?? []);
+  return (
+    <section
+      data-testid="project-scope"
+      className="flex flex-col gap-3 rounded-md border border-[#1f242d] bg-[#0b0e14] p-4"
+    >
+      <header>
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-[#10b981]">Scan scope</h3>
+        <p className="mt-1 text-[10px] text-[#6b7280]">
+          Coarse-grained control over what the scanner runs. Use these for the obvious on/off
+          toggles; drill into the per-rule table below only if you need to flip a single rule inside
+          an enabled group.
+        </p>
+      </header>
+
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-[11px] font-semibold uppercase tracking-wide text-[#d4d4d4]">
+          OWASP LLM Top 10 (2025) groups
+        </legend>
+        <p className="text-[10px] text-[#6b7280]">
+          Tick = include that category in the scan. All 10 are on by default. Groups marked{' '}
+          <span className="font-semibold text-[#fecaca]">AI key</span> need an LLM to evaluate
+          (configure it on{' '}
+          <a className="text-[#10b981] underline" href="/settings/ai">
+            /settings/ai
+          </a>
+          ); skipping AI groups is fine if you only want static checks.
+        </p>
+        <div className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+          {OWASP_GROUPS.map((g) => {
+            const checked = !disabledGroups.has(g.id);
+            return (
+              <label
+                key={g.id}
+                className="flex items-center gap-2 text-[11px] text-[#d4d4d4]"
+                data-testid="scope-group"
+                data-group-id={g.id}
+              >
+                <input
+                  type="checkbox"
+                  defaultChecked={checked}
+                  name={`group_${g.id}`}
+                  value="on"
+                  data-testid="scope-group-checkbox"
+                  className="h-4 w-4 cursor-pointer accent-[#10b981]"
+                />
+                <span className="font-mono text-[#10b981]">{g.id}</span>
+                <span className="text-[#d4d4d4]">{g.title}</span>
+                {g.requiresAiKey ? (
+                  <span className="ml-1 rounded bg-[#1e3a8a] px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[#bfdbfe]">
+                    AI key
+                  </span>
+                ) : null}
+              </label>
+            );
+          })}
+        </div>
+      </fieldset>
+
+      <Field
+        name="languages"
+        label={`Languages to scan (comma-separated; blank = all). Known: ${KNOWN_LANGUAGES.join(', ')}`}
+        defaultValue={(initial?.languages ?? []).join(', ')}
+        testid="scope-languages"
+        error={undefined}
+      />
+      <Field
+        name="extraExtensions"
+        label="Extra file extensions to scan (comma-separated, e.g. .tf, .yml, .lua)"
+        defaultValue={(initial?.extraExtensions ?? []).join(', ')}
+        testid="scope-extensions"
+        error={undefined}
+      />
+      <p className="text-[10px] text-[#6b7280]">
+        Note: server-side filtering of <code>languages</code> + <code>extraExtensions</code> ships
+        in the next slice; today these fields persist on the project record but the discovery layer
+        still walks every file type until that hook lands.
+      </p>
+    </section>
   );
 }

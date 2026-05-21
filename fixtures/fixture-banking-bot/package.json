@@ -1,0 +1,11 @@
+{
+  "name": "fixture-banking-bot",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Intentionally vulnerable banking bot used by audithex selftest. The two dependencies named below are TYPOSQUATS, on purpose — R014 should flag them.",
+  "dependencies": {
+    "anthropi": "^0.40.0",
+    "openi": "^4.0.0",
+    "langchain": "^0.3.0"
+  }
+}

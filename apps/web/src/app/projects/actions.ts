@@ -16,12 +16,27 @@ const ProjectFormSchema = z.object({
   name: z.string().min(1, 'Name is required.').max(64),
   rootPath: z.string().min(1, 'Root path is required.'),
   description: z.string().optional(),
+  languages: z.string().optional(),
+  extraExtensions: z.string().optional(),
   dbDriver: z.string().optional(),
   dbUri: z.string().optional(),
   dbDatabase: z.string().optional(),
   dbTables: z.string().optional(),
   dbScanAllTables: z.string().optional(),
 });
+
+const OWASP_GROUP_IDS = [
+  'LLM01',
+  'LLM02',
+  'LLM03',
+  'LLM04',
+  'LLM05',
+  'LLM06',
+  'LLM07',
+  'LLM08',
+  'LLM09',
+  'LLM10',
+] as const;
 
 export interface ProjectActionResult {
   ok: boolean;
@@ -35,6 +50,9 @@ interface ParsedProjectPayload {
   description: string | null;
   disabledRuleIds: string[];
   severityOverrides: Record<string, SeverityValue>;
+  disabledOwaspGroups: string[];
+  languages: string[];
+  extraExtensions: string[];
   dbConnection: ProjectDbConnection | null;
   dbTables: string[];
   dbScanAllTables: boolean;
@@ -53,6 +71,8 @@ function parseProjectForm(
     name: formData.get('name'),
     rootPath: formData.get('rootPath'),
     description: formData.get('description') ?? '',
+    languages: formData.get('languages') ?? '',
+    extraExtensions: formData.get('extraExtensions') ?? '',
     dbDriver: formData.get('dbDriver') ?? '',
     dbUri: formData.get('dbUri') ?? '',
     dbDatabase: formData.get('dbDatabase') ?? '',
@@ -90,6 +110,17 @@ function parseProjectForm(
       },
     };
   }
+  // Groups: each LLM0X checkbox sends `group_LLM0X=on` when ticked,
+  // nothing when unticked. The DISABLED set is the inverse: every
+  // group id whose checkbox is absent from the form data.
+  const disabledOwaspGroups: string[] = [];
+  for (const groupId of OWASP_GROUP_IDS) {
+    if (formData.get(`group_${groupId}`) !== 'on') {
+      disabledOwaspGroups.push(groupId);
+    }
+  }
+  const languages = parseCommaList(parsed.data.languages);
+  const extraExtensions = parseExtensionList(parsed.data.extraExtensions);
   const dbDriver = parsed.data.dbDriver?.trim() ?? '';
   const dbUri = parsed.data.dbUri?.trim() ?? '';
   let dbConnection: ProjectDbConnection | null = null;
@@ -132,11 +163,32 @@ function parseProjectForm(
       description: parsed.data.description?.trim() || null,
       disabledRuleIds: ids,
       severityOverrides: overrides,
+      disabledOwaspGroups,
+      languages,
+      extraExtensions,
       dbConnection,
       dbTables,
       dbScanAllTables,
     },
   };
+}
+
+function parseCommaList(raw: string | undefined): string[] {
+  if (!raw) return [];
+  const out: string[] = [];
+  for (const token of raw.split(/[,\s]+/)) {
+    const trimmed = token.trim();
+    if (trimmed.length === 0) continue;
+    out.push(trimmed);
+  }
+  return out;
+}
+
+function parseExtensionList(raw: string | undefined): string[] {
+  return parseCommaList(raw).map((ext) => {
+    const normalised = ext.toLowerCase();
+    return normalised.startsWith('.') ? normalised : `.${normalised}`;
+  });
 }
 
 export async function createProjectAction(
@@ -187,13 +239,7 @@ export async function deleteProjectAction(id: string): Promise<void> {
 }
 
 function parseTableList(raw: string | undefined): string[] {
-  if (!raw) return [];
-  const out: string[] = [];
-  for (const token of raw.split(/[,\s]+/)) {
-    const trimmed = token.trim();
-    if (trimmed.length > 0) out.push(trimmed);
-  }
-  return out;
+  return parseCommaList(raw);
 }
 
 function parseRuleIdList(raw: readonly FormDataEntryValue[]): string[] | null {

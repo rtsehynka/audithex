@@ -2,11 +2,12 @@
   "_id": "R009",
   "schemaVersion": "0.1",
   "severity": "critical",
-  "owasp": ["LLM02"],
+  "owasp": ["LLM05"],
   "cwe": "CWE-89",
   "engine": "regex-in-code",
   "params": {
     "skipComments": true,
+    "requiresAiContext": true,
     "inlinePatterns": [
       {
         "id": "js-sql-template-keywords",
