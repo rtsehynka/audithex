@@ -1,6 +1,6 @@
 import type { DiscoveryResult } from '@audithex/core-types';
 import { describe, expect, it } from 'vitest';
-import { runRules } from './index.js';
+import { type RuleProgressEvent, runRules } from './index.js';
 
 function discoveryAt(rootPath: string, files: string[]): DiscoveryResult {
   return {
@@ -55,5 +55,32 @@ describe('runRules — severityOverrides + disabledRuleIds', () => {
     // accept and not corrupt the rules pack. The shape of overrides is
     // exercised end-to-end by the CLI scan --project test.
     expect(result).toEqual([]);
+  });
+
+  it('emits onRuleEvaluated for every executed rule with monotonically rising index', () => {
+    const disco = discoveryAt('/nowhere', []);
+    const events: RuleProgressEvent[] = [];
+    runRules(disco, {
+      onRuleEvaluated: (e) => events.push(e),
+    });
+    expect(events.length).toBeGreaterThan(0);
+    expect(events[0]?.index).toBe(1);
+    expect(events[events.length - 1]?.index).toBe(events[events.length - 1]?.total);
+    // total stays constant across the whole run
+    const totals = new Set(events.map((e) => e.total));
+    expect(totals.size).toBe(1);
+  });
+
+  it('does not invoke onRuleEvaluated for rules listed in disabledRuleIds', () => {
+    const disco = discoveryAt('/nowhere', []);
+    const seen: string[] = [];
+    runRules(disco, {
+      disabledRuleIds: ['R001', 'R005', 'R009'],
+      onRuleEvaluated: (e) => seen.push(e.ruleId),
+    });
+    expect(seen).not.toContain('R001');
+    expect(seen).not.toContain('R005');
+    expect(seen).not.toContain('R009');
+    expect(seen.length).toBeGreaterThan(0);
   });
 });

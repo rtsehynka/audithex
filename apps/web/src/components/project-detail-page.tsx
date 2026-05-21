@@ -6,6 +6,7 @@ import type { ProjectView } from '../lib/projects';
 import type { ScanRunSummary } from '../lib/queries';
 import type { RuleOption } from '../lib/rules';
 import ProjectForm from './project-form';
+import RunScanCard from './run-scan-card';
 import SeverityBadge from './severity-badge';
 
 interface Props {
@@ -70,6 +71,8 @@ export default function ProjectDetailPage({
           <ProjectForm initial={project} submitLabel="Save changes" action={bound} rules={rules} />
         </div>
       </section>
+
+      <RunScanCard projectId={project.id} projectName={project.name} />
 
       <section
         data-testid="project-scans"
