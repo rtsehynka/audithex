@@ -260,7 +260,27 @@ The dashboard surfaces these routes:
 - **`/scans/[id]`** — full detail of one scan run: metadata grid (project root, rules pack, audithex version, elapsed time, discovery summary, fingerprint), then findings grouped by severity (`critical` → `high` → `medium` → `low`). A "Diff vs…" picker in the header jumps straight to a side-by-side compare; a "Download PDF" link streams a real PDF of the report. Each finding row carries an **Explain how to fix** button that calls the configured LLM (or the canned dry-run response) and caches the result in Mongo. Unknown ids 404.
 - **`/scans/[id]/compare/[otherId]`** — diff between two scans, keyed by `ruleId + file + line`. The older `scannedAt` is automatically treated as the baseline. Shows totals (added / removed / unchanged) and grouped rows with severity badges.
 - **`/scans/[id]/pdf`** — real PDF stream (server-rendered via `@react-pdf/renderer`): A4 page, metadata grid, findings grouped by severity, `AI FIX CACHED` markers next to findings that have a stored explanation. ASCII-sanitised before render so future Unicode field values do not crash the type-shaper.
+- **`/projects`** — list of every project record in Mongo with name, root path, count of disabled rule ids, count of severity overrides, and last-updated timestamp. The header carries a **+ New project** action that lands on `/projects/new`.
+- **`/projects/new`** — create form: name (unique), absolute root path, optional description, comma-separated disabled rule ids (`R013, R019`), and one-per-line severity overrides (`R009=low`). Submitting redirects to the new project's detail page.
+- **`/projects/[id]`** — edit form pre-filled from the record plus a per-project scan history strip showing the latest 25 runs attached to it. Deleting from the header asks no extra confirmation (button is destructive — guard against fat-fingers via the back link); deletes redirect to `/projects`.
 - **`/settings`** — read-only info page: Audithex CLI version, session TTL, cookie name, MongoDB connection status + masked URI + database name + `scan_runs` count, the latest five rules-pack update outcomes. Surfaces a clear hint that on-disk overrides live in `.audithex/config.json` and the CLI owns the truth.
+
+### Projects: scope, overrides, disabled rules
+
+A **project** is a named, persisted bundle of "I want these rules disabled" and "I want these severities overridden" that the scanner picks up when invoked with `--project <name>`. Projects live in Mongo (`projects` collection) and are managed identically from the CLI and the web UI:
+
+```bash
+# CLI — create / list / show / delete
+node apps/cli/bin/audithex.js project create --name banking-bot --root-path ./fixtures/fixture-banking-bot --disable R013,R019
+node apps/cli/bin/audithex.js project list
+node apps/cli/bin/audithex.js project show banking-bot
+node apps/cli/bin/audithex.js project delete banking-bot --force
+
+# CLI — scan against a project (uses its rootPath, overrides, disabled rules)
+node apps/cli/bin/audithex.js scan --project banking-bot
+```
+
+The persisted ScanRun records its `projectId`, so the history table renders a per-row project link and `/projects/[id]` shows the run under its history strip. Severity overrides are managed via the web form (`R009=low`, one per line); the CLI surfaces `--disable R013,R019` for disabled-rule sets and reads severity overrides from the project record at scan time.
 
 ### "Explain how to fix" (AI fix recommendations)
 
@@ -285,7 +305,6 @@ The UI runs entirely on `localhost` — no traffic leaves your machine. Cypress 
 yarn workspace @audithex/web run cypress:e2e            # orchestrator: in-memory Mongo + seeded user + `next start` + cypress run
 yarn workspace @audithex/web run cypress:e2e:dev        # same, but `next dev` for hot reload
 yarn workspace @audithex/web run cypress:open           # interactive cypress runner against an already-running server
-yarn workspace @audithex/web run screenshots            # Puppeteer screenshots → ~/Desktop/audithex-u2-<date>/
 ```
 
 ### Rotate the password

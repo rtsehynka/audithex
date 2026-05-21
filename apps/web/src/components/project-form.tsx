@@ -1,0 +1,239 @@
+'use client';
+
+import { type ReactElement, useActionState, useState } from 'react';
+import type { ProjectActionResult } from '../app/projects/actions';
+import type { ProjectView } from '../lib/projects';
+import type { RuleOption } from '../lib/rules';
+
+interface Props {
+  initial?: ProjectView | null;
+  submitLabel: string;
+  action: (prev: ProjectActionResult | null, fd: FormData) => Promise<ProjectActionResult>;
+  rules: RuleOption[];
+}
+
+const SEVERITIES = ['critical', 'high', 'medium', 'low'] as const;
+type Severity = (typeof SEVERITIES)[number];
+type RuleState = { disabled: boolean; override: Severity | '' };
+
+export default function ProjectForm({ initial, submitLabel, action, rules }: Props): ReactElement {
+  const [state, formAction, pending] = useActionState<ProjectActionResult | null, FormData>(
+    async (_prev, fd) => action(_prev, fd),
+    null,
+  );
+  const fieldError = (key: string): string | undefined => state?.fieldErrors?.[key];
+
+  const initialRuleState: Record<string, RuleState> = {};
+  for (const r of rules) {
+    initialRuleState[r.id] = {
+      disabled: initial?.disabledRuleIds.includes(r.id) ?? false,
+      override: (initial?.severityOverrides[r.id] as Severity | undefined) ?? '',
+    };
+  }
+  const [ruleState, setRuleState] = useState<Record<string, RuleState>>(initialRuleState);
+
+  const setDisabled = (id: string, disabled: boolean): void => {
+    setRuleState((prev) => {
+      const existing = prev[id];
+      const next: RuleState = existing ? { ...existing, disabled } : { disabled, override: '' };
+      return { ...prev, [id]: next };
+    });
+  };
+  const setOverride = (id: string, override: Severity | ''): void => {
+    setRuleState((prev) => {
+      const existing = prev[id];
+      const next: RuleState = existing ? { ...existing, override } : { disabled: false, override };
+      return { ...prev, [id]: next };
+    });
+  };
+
+  const disabledRuleIdsCsv = rules
+    .filter((r) => ruleState[r.id]?.disabled)
+    .map((r) => r.id)
+    .join(',');
+  const severityOverridesText = rules
+    .filter((r) => ruleState[r.id]?.override)
+    .map((r) => `${r.id}=${ruleState[r.id]?.override}`)
+    .join('\n');
+
+  return (
+    <form action={formAction} className="flex flex-col gap-4">
+      <Field
+        name="name"
+        label="Name"
+        required
+        defaultValue={initial?.name}
+        testid="project-name"
+        error={fieldError('name')}
+      />
+      <Field
+        name="rootPath"
+        label="Root path (absolute)"
+        required
+        defaultValue={initial?.rootPath}
+        testid="project-root-path"
+        error={fieldError('rootPath')}
+      />
+      <Field
+        name="description"
+        label="Description"
+        defaultValue={initial?.description ?? ''}
+        testid="project-description"
+        error={fieldError('description')}
+      />
+
+      <section data-testid="project-rules" className="flex flex-col gap-2">
+        <header className="flex items-baseline justify-between">
+          <span className="text-sm text-[#d4d4d4]">Rules</span>
+          <span className="text-[10px] text-[#6b7280]">
+            {rules.length} rule{rules.length === 1 ? '' : 's'} in the active pack. Update via{' '}
+            <code className="text-[#10b981]">audithex update</code>.
+          </span>
+        </header>
+        <div className="overflow-x-auto rounded-md border border-[#1f242d]">
+          <table className="min-w-full divide-y divide-[#1f242d] text-xs">
+            <thead className="bg-[#0b0e14] text-[#6b7280]">
+              <tr>
+                <Th>Disabled</Th>
+                <Th>Id</Th>
+                <Th>Title</Th>
+                <Th>Default</Th>
+                <Th>Override</Th>
+                <Th>OWASP</Th>
+                <Th>CWE</Th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#1f242d]">
+              {rules.map((rule) => {
+                const s = ruleState[rule.id] ?? { disabled: false, override: '' };
+                return (
+                  <tr
+                    key={rule.id}
+                    data-testid="rule-row"
+                    data-rule-id={rule.id}
+                    className={s.disabled ? 'opacity-50' : undefined}
+                  >
+                    <td className="px-3 py-2">
+                      <input
+                        type="checkbox"
+                        checked={s.disabled}
+                        onChange={(e) => setDisabled(rule.id, e.target.checked)}
+                        data-testid="rule-disabled"
+                        className="h-4 w-4 cursor-pointer accent-[#10b981]"
+                      />
+                    </td>
+                    <td className="px-3 py-2 font-mono text-[#10b981]">{rule.id}</td>
+                    <td className="px-3 py-2 text-[#d4d4d4]">{rule.title}</td>
+                    <td className="px-3 py-2">
+                      <SeverityTag severity={rule.defaultSeverity} />
+                    </td>
+                    <td className="px-3 py-2">
+                      <select
+                        value={s.override}
+                        onChange={(e) => setOverride(rule.id, e.target.value as Severity | '')}
+                        data-testid="rule-override"
+                        className="rounded border border-[#1f242d] bg-[#0b0e14] px-2 py-1 text-[11px] text-[#d4d4d4] focus:border-[#10b981] focus:outline-none"
+                      >
+                        <option value="">— default —</option>
+                        {SEVERITIES.map((sev) => (
+                          <option key={sev} value={sev}>
+                            {sev}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-2 text-[#6b7280]">{rule.owasp.join(', ') || '—'}</td>
+                    <td className="px-3 py-2 text-[#6b7280]">{rule.cwe ?? '—'}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <input type="hidden" name="disabledRuleIds" value={disabledRuleIdsCsv} />
+        <input type="hidden" name="severityOverrides" value={severityOverridesText} />
+      </section>
+
+      {state?.error ? (
+        <p
+          data-testid="project-form-error"
+          className="rounded-md border border-[#ef4444] bg-[rgba(239,68,68,0.06)] px-3 py-2 text-xs text-[#ef4444]"
+        >
+          {state.error}
+        </p>
+      ) : null}
+      {state?.ok ? (
+        <p
+          data-testid="project-form-saved"
+          className="rounded-md border border-[#10b981] bg-[rgba(16,185,129,0.06)] px-3 py-2 text-xs text-[#10b981]"
+        >
+          Saved.
+        </p>
+      ) : null}
+      <button
+        type="submit"
+        disabled={pending}
+        data-testid="project-submit"
+        className="mt-2 rounded-md bg-[#10b981] px-4 py-2 text-sm font-semibold text-[#0b0e14] hover:bg-[#f97316] disabled:opacity-50"
+      >
+        {pending ? 'Saving…' : submitLabel}
+      </button>
+    </form>
+  );
+}
+
+function Field({
+  name,
+  label,
+  defaultValue,
+  required,
+  testid,
+  error,
+}: {
+  name: string;
+  label: string;
+  defaultValue?: string;
+  required?: boolean;
+  testid: string;
+  error?: string;
+}): ReactElement {
+  return (
+    <label className="flex flex-col gap-1 text-sm">
+      <span className="text-[#6b7280]">{label}</span>
+      <input
+        name={name}
+        type="text"
+        required={required}
+        defaultValue={defaultValue}
+        data-testid={testid}
+        className="rounded-md border border-[#1f242d] bg-[#0b0e14] px-3 py-2 text-sm focus:border-[#10b981] focus:outline-none"
+      />
+      {error ? <span className="text-xs text-[#ef4444]">{error}</span> : null}
+    </label>
+  );
+}
+
+function Th({ children }: { children: React.ReactNode }): ReactElement {
+  return (
+    <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
+      {children}
+    </th>
+  );
+}
+
+const SEVERITY_BG: Record<Severity, string> = {
+  critical: 'bg-[#7f1d1d] text-[#fecaca]',
+  high: 'bg-[#9a3412] text-[#fed7aa]',
+  medium: 'bg-[#854d0e] text-[#fde68a]',
+  low: 'bg-[#1e3a8a] text-[#bfdbfe]',
+};
+
+function SeverityTag({ severity }: { severity: Severity }): ReactElement {
+  return (
+    <span
+      className={`rounded px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${SEVERITY_BG[severity]}`}
+    >
+      {severity}
+    </span>
+  );
+}

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import type { Finding, ScanResult, Severity } from '@audithex/core-types';
 import type { Connection } from 'mongoose';
 import { type AiFixDocument, getAiFixModel } from './models/ai-fix.js';
+import { type ProjectDocument, getProjectModel } from './models/project.js';
 import {
   type RulesPackUpdateDocument,
   type UpdateOutcomeKind,
@@ -55,6 +56,7 @@ export function fingerprintScanResult(result: ScanResult): string {
 export interface SaveScanRunInput {
   scan: ScanResult;
   userId?: string | null;
+  projectId?: string | null;
 }
 
 export async function saveScanRun(
@@ -64,6 +66,7 @@ export async function saveScanRun(
   const Model = getScanRunModel(connection);
   const doc: Partial<ScanRunDocument> = {
     userId: input.userId ?? null,
+    projectId: input.projectId ?? null,
     rootPath: input.scan.rootPath,
     scannedAt: input.scan.scannedAt,
     discovery: input.scan.discovery,
@@ -80,6 +83,7 @@ export async function saveScanRun(
 
 export interface ListScanRunsOptions {
   userId?: string | null;
+  projectId?: string | null;
   rootPath?: string;
   limit?: number;
   skip?: number;
@@ -92,6 +96,7 @@ export async function listScanRuns(
   const Model = getScanRunModel(connection);
   const query: Record<string, unknown> = {};
   if (options.userId !== undefined) query.userId = options.userId;
+  if (options.projectId !== undefined) query.projectId = options.projectId;
   if (options.rootPath) query.rootPath = options.rootPath;
   return Model.find(query)
     .sort({ createdAt: -1 })
@@ -229,4 +234,76 @@ export async function listAiFixesForScan(
 ): Promise<AiFixDocument[]> {
   const Model = getAiFixModel(connection);
   return Model.find({ scanId }).sort({ createdAt: 1 }).lean<AiFixDocument[]>().exec();
+}
+
+/* --- Projects ------------------------------------------------------- */
+
+export interface CreateProjectInput {
+  name: string;
+  rootPath: string;
+  description?: string | null;
+  severityOverrides?: ProjectDocument['severityOverrides'];
+  disabledRuleIds?: string[];
+}
+
+export type UpdateProjectInput = Partial<Omit<CreateProjectInput, 'name'>> & {
+  name?: string;
+};
+
+export async function createProject(
+  connection: Connection,
+  input: CreateProjectInput,
+): Promise<ProjectDocument> {
+  const Model = getProjectModel(connection);
+  const created = await Model.create({
+    name: input.name,
+    rootPath: input.rootPath,
+    description: input.description ?? null,
+    severityOverrides: input.severityOverrides ?? {},
+    disabledRuleIds: input.disabledRuleIds ?? [],
+  });
+  const doc = created.toObject({ versionKey: false });
+  return {
+    ...doc,
+    severityOverrides: doc.severityOverrides ?? {},
+    disabledRuleIds: doc.disabledRuleIds ?? [],
+  };
+}
+
+export async function listProjects(connection: Connection): Promise<ProjectDocument[]> {
+  const Model = getProjectModel(connection);
+  return Model.find().sort({ name: 1 }).lean<ProjectDocument[]>().exec();
+}
+
+export async function getProjectById(
+  connection: Connection,
+  id: string,
+): Promise<ProjectDocument | null> {
+  const Model = getProjectModel(connection);
+  return Model.findById(id).lean<ProjectDocument | null>().exec();
+}
+
+export async function getProjectByName(
+  connection: Connection,
+  name: string,
+): Promise<ProjectDocument | null> {
+  const Model = getProjectModel(connection);
+  return Model.findOne({ name }).lean<ProjectDocument | null>().exec();
+}
+
+export async function updateProject(
+  connection: Connection,
+  id: string,
+  input: UpdateProjectInput,
+): Promise<ProjectDocument | null> {
+  const Model = getProjectModel(connection);
+  return Model.findByIdAndUpdate(id, { $set: input }, { new: true })
+    .lean<ProjectDocument | null>()
+    .exec();
+}
+
+export async function deleteProject(connection: Connection, id: string): Promise<boolean> {
+  const Model = getProjectModel(connection);
+  const result = await Model.deleteOne({ _id: id }).exec();
+  return result.deletedCount > 0;
 }

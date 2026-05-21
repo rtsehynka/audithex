@@ -2,6 +2,7 @@ import { initI18n, t } from '@audithex/core-i18n';
 import { Command } from 'commander';
 import { registerHistoryCommand } from './commands/history.js';
 import { registerInitCommand } from './commands/init.js';
+import { registerProjectCommand } from './commands/project.js';
 import { registerScanCommand } from './commands/scan.js';
 import { registerSelftestCommand } from './commands/selftest.js';
 import { registerUiCommand } from './commands/ui.js';
@@ -36,6 +37,7 @@ export async function main(argv: readonly string[]): Promise<number> {
   registerHistoryCommand(program, env);
   registerUiCommand(program, env);
   registerUserCommand(program, env);
+  registerProjectCommand(program, env);
   registerInitCommand(program, env);
   registerVersionCommand(program);
 

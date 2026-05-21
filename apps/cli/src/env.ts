@@ -47,6 +47,10 @@ const schema = z.object({
       if (!Number.isFinite(n) || n <= 0 || n > 65_535) return 7777;
       return n;
     }),
+  AUDITHEX_PROJECT: z.preprocess(
+    (v) => (typeof v === 'string' && v.length === 0 ? undefined : v),
+    z.string().optional(),
+  ),
 });
 
 export type AudithexEnv = z.infer<typeof schema>;

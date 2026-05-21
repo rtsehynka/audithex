@@ -19,6 +19,9 @@
   },
   "noFindings": "No findings — your project looks clean.",
   "completed": "Scan complete.",
-  "persisted": "Saved scan run {{id}} for {{rootPath}} to MongoDB.",
-  "persistFailed": "Could not persist scan to MongoDB: {{error}}"
+  "persisted": "Saved scan run {{id}} for {{rootPath}} to MongoDB (project: {{project}}).",
+  "persistFailed": "Could not persist scan to MongoDB: {{error}}",
+  "noProject": "—",
+  "projectRequiresMongo": "--project / AUDITHEX_PROJECT requires MONGODB_URI to be set.",
+  "projectNotFound": "Project '{{name}}' not found in MongoDB. {{error}}"
 }

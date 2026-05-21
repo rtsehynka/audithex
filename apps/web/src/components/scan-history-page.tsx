@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { compactPath, formatMs, formatTimestamp, shortId } from '../lib/format';
 import type { ListScansResult } from '../lib/queries';
 import SeverityBadge from './severity-badge';
+import { Td, Th } from './table-cells';
 
 interface Props {
   data: ListScansResult;
@@ -22,6 +23,13 @@ export default function ScanHistoryPage({ data, sessionEmail, signOut }: Props):
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/projects"
+            data-testid="projects-link"
+            className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#10b981] hover:text-[#10b981]"
+          >
+            Projects
+          </Link>
           <Link
             href="/settings"
             data-testid="settings-link"
@@ -75,12 +83,13 @@ function ScanTable({ data }: { data: ListScansResult }): ReactElement {
         <thead className="text-[#6b7280]">
           <tr>
             <Th>Id</Th>
+            <Th>Project</Th>
             <Th>Scanned at</Th>
             <Th>Top severity</Th>
             <Th>Findings</Th>
             <Th>Rules</Th>
             <Th>Elapsed</Th>
-            <Th>Project</Th>
+            <Th>Path</Th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[#1f242d]">
@@ -101,6 +110,18 @@ function ScanTable({ data }: { data: ListScansResult }): ReactElement {
                   >
                     {shortId(run.id)}
                   </Link>
+                </Td>
+                <Td data-testid="scan-project">
+                  {run.projectId && run.projectName ? (
+                    <Link
+                      href={`/projects/${run.projectId}`}
+                      className="text-[#10b981] hover:text-[#f97316]"
+                    >
+                      {run.projectName}
+                    </Link>
+                  ) : (
+                    <span className="text-[#6b7280]">—</span>
+                  )}
                 </Td>
                 <Td>{formatTimestamp(run.scannedAt)}</Td>
                 <Td>
@@ -123,30 +144,6 @@ function ScanTable({ data }: { data: ListScansResult }): ReactElement {
       </table>
       <PaginationBar limit={data.limit} skip={data.skip} total={data.total} />
     </section>
-  );
-}
-
-function Th({ children }: { children: React.ReactNode }): ReactElement {
-  return (
-    <th className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wide">
-      {children}
-    </th>
-  );
-}
-
-function Td({
-  children,
-  className,
-  title,
-}: {
-  children: React.ReactNode;
-  className?: string;
-  title?: string;
-}): ReactElement {
-  return (
-    <td className={`px-3 py-2 align-top ${className ?? ''}`} title={title}>
-      {children}
-    </td>
   );
 }
 

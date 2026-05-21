@@ -4,6 +4,7 @@ import type {
   PatternBundle,
   RuleDocument,
   RulesPack,
+  Severity,
 } from '@audithex/core-types';
 import { getEngine } from './engines/index.js';
 import { loadBundledRulesPack } from './loader.js';
@@ -22,6 +23,18 @@ export interface RunRulesOptions {
   rulesPack?: RulesPack;
   /** Subset of rule ids to run; default = all enabled rules in the pack. */
   ruleIds?: readonly string[];
+  /**
+   * Per-rule severity overrides. When a finding is produced for one of
+   * these rule ids, the override replaces the rule's default severity
+   * (in the finding only — the rule document is not mutated).
+   */
+  severityOverrides?: Readonly<Record<string, Severity>>;
+  /**
+   * Rule ids to skip entirely. Treated identically to `enabled: false`
+   * on the rule document but lives outside the rules-pack so projects
+   * can disable rules without forking the pack.
+   */
+  disabledRuleIds?: readonly string[];
 }
 
 export function runRules(discovery: DiscoveryResult, options: RunRulesOptions = {}): Finding[] {
@@ -30,14 +43,22 @@ export function runRules(discovery: DiscoveryResult, options: RunRulesOptions = 
     pack.patternBundles.map((b) => [b._id, b]),
   );
   const filter = options.ruleIds ? new Set(options.ruleIds) : null;
+  const disabled = options.disabledRuleIds ? new Set(options.disabledRuleIds) : null;
+  const overrides = options.severityOverrides;
   const findings: Finding[] = [];
 
   for (const rule of pack.rules) {
     if (rule.enabled === false) continue;
-    if (filter && !filter.has(rule._id)) continue;
+    if (filter?.has(rule._id) === false) continue;
+    if (disabled?.has(rule._id)) continue;
     const engine = getEngine(rule.engine);
     if (!engine) continue;
-    findings.push(...engine.evaluate(rule, { discovery, patternBundles: bundleIndex }));
+    const produced = engine.evaluate(rule, { discovery, patternBundles: bundleIndex });
+    const override = overrides?.[rule._id];
+    if (override) {
+      for (const f of produced) f.severity = override;
+    }
+    findings.push(...produced);
   }
   return findings;
 }

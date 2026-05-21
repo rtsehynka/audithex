@@ -42,6 +42,11 @@ yarn-debug.log*
 **/cypress/videos/
 **/cypress/downloads/
 
+# Local-only maintainer scripts that may hold absolute paths to
+# tools outside the workspace (puppeteer install, scratch dirs, …).
+# Keep these on disk for personal use; never commit.
+apps/web/scripts/screenshots.mjs
+
 # Generated reports
 report.html
 report.json

@@ -21,6 +21,8 @@ export interface ScanRunSummary {
   severityCounts: SeverityCounts;
   totalFindings: number;
   createdAt: string;
+  projectId: string | null;
+  projectName: string | null;
 }
 
 export interface ScanRunDetail extends ScanRunSummary {
@@ -69,16 +71,26 @@ export async function listScans({
   rootPath?: string;
 } = {}): Promise<ListScansResult> {
   const conn = await getConnection();
-  const [docs, total] = await Promise.all([
+  const [docs, total, projectIndex] = await Promise.all([
     fetchScanRuns(conn, { limit, skip, ...(rootPath ? { rootPath } : {}) }),
     countScanRuns(conn),
+    listProjectsIndexedById(),
   ]);
   return {
-    runs: docs.map(toSummary),
+    runs: docs.map((d) => toSummary(d, projectIndex)),
     total,
     limit,
     skip,
   };
+}
+
+async function listProjectsIndexedById(): Promise<Map<string, string>> {
+  const { listProjects } = await import('@audithex/core-persistence');
+  const conn = await getConnection();
+  const docs = await listProjects(conn);
+  const idx = new Map<string, string>();
+  for (const d of docs) idx.set(String(d._id), d.name);
+  return idx;
 }
 
 export interface ScanComparisonOption {
@@ -113,7 +125,8 @@ export async function getScan(id: string): Promise<ScanRunDetail | null> {
   const conn = await getConnection();
   const doc = await fetchScanRunById(conn, id);
   if (!doc) return null;
-  const summary = toSummary(doc);
+  const projectIndex = await listProjectsIndexedById();
+  const summary = toSummary(doc, projectIndex);
   return {
     ...summary,
     audithexVersion: doc.audithexVersion,
@@ -134,8 +147,21 @@ export async function getScan(id: string): Promise<ScanRunDetail | null> {
   };
 }
 
-function toSummary(doc: ScanRunDocument): ScanRunSummary {
-  const counts = countBySeverity(doc.findings);
+function toSummary(
+  doc: ScanRunDocument,
+  projectIndex: ReadonlyMap<string, string>,
+): ScanRunSummary {
+  const projectId = doc.projectId ?? null;
+  const projectName = projectId ? (projectIndex.get(projectId) ?? null) : null;
+  return toScanRunSummary(doc, projectName);
+}
+
+/**
+ * Plain-object projection of a Mongo ScanRun. Exported so per-project
+ * pages can reuse the exact same shape without re-implementing the
+ * counts + ISO normalisation rules (which is what jscpd flagged).
+ */
+export function toScanRunSummary(doc: ScanRunDocument, projectName: string | null): ScanRunSummary {
   return {
     id: String(doc._id),
     rootPath: doc.rootPath,
@@ -143,9 +169,11 @@ function toSummary(doc: ScanRunDocument): ScanRunSummary {
     topSeverity: doc.topSeverity,
     rulesVersion: doc.rulesVersion,
     elapsedMs: doc.elapsedMs,
-    severityCounts: counts,
+    severityCounts: countBySeverity(doc.findings),
     totalFindings: doc.findings.length,
     createdAt: doc.createdAt ? doc.createdAt.toISOString() : doc.scannedAt,
+    projectId: doc.projectId ?? null,
+    projectName,
   };
 }
 

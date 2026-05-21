@@ -1,25 +1,12 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
-import type { Connection } from 'mongoose';
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest';
-import { connectMongo, disconnectAll } from './connect.js';
+import { afterEach, describe, expect, it } from 'vitest';
 import { getAiFixModel } from './models/ai-fix.js';
 import { findAiFix, listAiFixesForScan, saveAiFix } from './repository.js';
+import { setupMongoFixture } from './test-helpers/mongo-fixture.js';
 
-let mongo: MongoMemoryServer;
-let conn: Connection;
-
-beforeAll(async () => {
-  mongo = await MongoMemoryServer.create();
-  conn = await connectMongo(mongo.getUri());
-}, 60_000);
-
-afterAll(async () => {
-  await disconnectAll();
-  await mongo.stop();
-});
+const { getConn } = setupMongoFixture();
 
 afterEach(async () => {
-  await getAiFixModel(conn).deleteMany({});
+  await getAiFixModel(getConn()).deleteMany({});
 });
 
 function fakeInput(
@@ -43,30 +30,30 @@ function fakeInput(
 
 describe('AI fix cache', () => {
   it('saves a fix and finds it back by (scanId, findingKey)', async () => {
-    await saveAiFix(conn, fakeInput('scan-1', 'R001|src/agent.ts|4'));
-    const found = await findAiFix(conn, 'scan-1', 'R001|src/agent.ts|4');
+    await saveAiFix(getConn(), fakeInput('scan-1', 'R001|src/agent.ts|4'));
+    const found = await findAiFix(getConn(), 'scan-1', 'R001|src/agent.ts|4');
     expect(found?.response).toBe('use parameterised queries');
     expect(found?.costUsd).toBe(0.0042);
   });
 
   it('upserts on a repeat save for the same key', async () => {
-    await saveAiFix(conn, fakeInput('scan-1', 'R001|src/agent.ts|4', 'first answer'));
-    await saveAiFix(conn, fakeInput('scan-1', 'R001|src/agent.ts|4', 'better answer'));
-    const fixes = await listAiFixesForScan(conn, 'scan-1');
+    await saveAiFix(getConn(), fakeInput('scan-1', 'R001|src/agent.ts|4', 'first answer'));
+    await saveAiFix(getConn(), fakeInput('scan-1', 'R001|src/agent.ts|4', 'better answer'));
+    const fixes = await listAiFixesForScan(getConn(), 'scan-1');
     expect(fixes).toHaveLength(1);
     expect(fixes[0]?.response).toBe('better answer');
   });
 
   it('lists every fix for a scan, oldest first', async () => {
-    await saveAiFix(conn, fakeInput('scan-2', 'R001|src/agent.ts|4', 'fix A'));
-    await saveAiFix(conn, fakeInput('scan-2', 'R005|src/agent.ts|8', 'fix B'));
-    const fixes = await listAiFixesForScan(conn, 'scan-2');
+    await saveAiFix(getConn(), fakeInput('scan-2', 'R001|src/agent.ts|4', 'fix A'));
+    await saveAiFix(getConn(), fakeInput('scan-2', 'R005|src/agent.ts|8', 'fix B'));
+    const fixes = await listAiFixesForScan(getConn(), 'scan-2');
     expect(fixes).toHaveLength(2);
     expect(fixes.map((f) => f.response)).toEqual(['fix A', 'fix B']);
   });
 
   it('returns null when the cache is empty for a finding', async () => {
-    const found = await findAiFix(conn, 'scan-1', 'R002|other.ts|1');
+    const found = await findAiFix(getConn(), 'scan-1', 'R002|other.ts|1');
     expect(found).toBeNull();
   });
 });

@@ -64,15 +64,35 @@ async function main() {
   await persistence.createUser(conn, { email: EMAIL, passwordHash });
   await persistence.disconnectAll();
 
-  console.log('[orchestrator] seeding scans via the CLI…');
+  console.log('[orchestrator] seeding banking-bot project via the CLI…');
   const cliBin = resolve(repoRoot, 'apps', 'cli', 'bin', 'audithex.js');
   const fixture = resolve(repoRoot, 'fixtures', 'fixture-banking-bot');
-  // Seed a clean tmp project first so banking-bot ends up as the
-  // newest scan (createdAt desc → first row in the history table).
-  // Both scans give the compare view a 10-vs-0 finding diff to work
-  // against.
-  for (const target of [makeCleanProject(), fixture]) {
-    const cliResult = spawnSync('node', [cliBin, 'scan', target, '--report', 'json'], {
+  const PROJECT_NAME = 'banking-bot';
+  const projectResult = spawnSync(
+    'node',
+    [cliBin, 'project', 'create', '--name', PROJECT_NAME, '--root-path', fixture],
+    { env: { ...process.env, MONGODB_URI: uri }, encoding: 'utf8' },
+  );
+  if (projectResult.status !== 0) {
+    throw new Error(
+      `audithex project create failed (exit=${projectResult.status}): ${projectResult.stderr || projectResult.stdout}`,
+    );
+  }
+
+  console.log('[orchestrator] seeding scans via the CLI…');
+  // The clean tmp scan goes first so the banking-bot scan ends up as the
+  // newest row (createdAt desc → first row in the history table). The
+  // banking-bot scan is attached to the project we just created so the
+  // history table renders a project link and /projects/[id] shows the
+  // run under its scan history.
+  const seedTargets = [
+    { target: makeCleanProject(), projectName: null },
+    { target: fixture, projectName: PROJECT_NAME },
+  ];
+  for (const { target, projectName } of seedTargets) {
+    const args = ['scan', target, '--report', 'json'];
+    if (projectName) args.push('--project', projectName);
+    const cliResult = spawnSync('node', [cliBin, ...args], {
       env: { ...process.env, MONGODB_URI: uri },
       encoding: 'utf8',
     });

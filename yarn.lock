@@ -142,8 +142,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@audithex/web@workspace:apps/web"
   dependencies:
+    "@audithex/core-i18n": "workspace:*"
     "@audithex/core-persistence": "workspace:*"
+    "@audithex/core-rules": "workspace:*"
     "@audithex/core-types": "workspace:*"
+    "@audithex/core-update": "workspace:*"
     "@react-pdf/renderer": "npm:4.5.1"
     "@types/node": "npm:22.10.5"
     "@types/react": "npm:19.2.5"

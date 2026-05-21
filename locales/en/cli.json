@@ -8,7 +8,8 @@
         "severity": "Minimum severity to display (critical, high, medium, low)",
         "dynamic": "Run dynamic tests against AUDITHEX_AGENT_ENDPOINT",
         "ci": "CI mode: silent output, structured exit codes",
-        "noUpdateCheck": "Skip the daily update check"
+        "noUpdateCheck": "Skip the daily update check",
+        "project": "Look up the named project in MongoDB and apply its rootPath + overrides"
       }
     },
     "update": {
@@ -25,6 +26,9 @@
     },
     "user": {
       "summary": "Manage the local web-UI user (create, rotate password)"
+    },
+    "project": {
+      "summary": "Create / list / show / delete reusable scan projects in MongoDB"
     },
     "init": {
       "summary": "Create .audithex/config.json in the current project"

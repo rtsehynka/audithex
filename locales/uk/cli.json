@@ -8,7 +8,8 @@
         "severity": "Мінімальна важливість для відображення (critical, high, medium, low)",
         "dynamic": "Запустити динамічні тести проти AUDITHEX_AGENT_ENDPOINT",
         "ci": "CI режим: мінімальний вивід + структуровані exit-коди",
-        "noUpdateCheck": "Пропустити щоденну перевірку оновлень"
+        "noUpdateCheck": "Пропустити щоденну перевірку оновлень",
+        "project": "Знайти проєкт за назвою у MongoDB та застосувати його rootPath + overrides"
       }
     },
     "update": {
@@ -25,6 +26,9 @@
     },
     "user": {
       "summary": "Керування користувачем web UI (створити, змінити пароль)"
+    },
+    "project": {
+      "summary": "Створити / показати / видалити збережений проєкт сканування у MongoDB"
     },
     "init": {
       "summary": "Створити .audithex/config.json у поточному проєкті"

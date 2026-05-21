@@ -11,6 +11,8 @@ import { Schema } from 'mongoose';
 export interface ScanRunDocument {
   _id?: string;
   userId?: string | null;
+  /** Optional foreign key to a Project (null for ad-hoc scans). */
+  projectId?: string | null;
   rootPath: string;
   scannedAt: string;
   discovery: ScanResult['discovery'];
@@ -61,6 +63,7 @@ const DiscoverySummarySchema = new Schema(
 const ScanRunSchema = new Schema<ScanRunDocument>(
   {
     userId: { type: String, default: null, index: true },
+    projectId: { type: String, default: null, index: true },
     rootPath: { type: String, required: true, index: true },
     scannedAt: { type: String, required: true },
     discovery: { type: DiscoverySummarySchema, required: true },
@@ -76,6 +79,7 @@ const ScanRunSchema = new Schema<ScanRunDocument>(
 
 ScanRunSchema.index({ createdAt: -1 });
 ScanRunSchema.index({ rootPath: 1, createdAt: -1 });
+ScanRunSchema.index({ projectId: 1, createdAt: -1 });
 
 export function getScanRunModel(connection: Connection): Model<ScanRunDocument> {
   const existing = connection.models.ScanRun as Model<ScanRunDocument> | undefined;

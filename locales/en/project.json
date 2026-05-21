@@ -1,0 +1,44 @@
+{
+  "mongoMissing": "MONGODB_URI is not configured. Set it in .env before running `audithex project`.",
+  "notFound": "Project '{{name}}' not found.",
+  "invalidRuleIds": "--disable must be a comma-separated list of rule ids like R001,R002.",
+  "create": {
+    "summary": "Create a new named scan project in MongoDB.",
+    "ok": "Project {{name}} created (id={{id}}).",
+    "exists": "A project named {{name}} already exists. Pick a different name or delete the old one first.",
+    "failed": "Could not create project: {{error}}",
+    "cancelled": "Cancelled — no project was created.",
+    "flags": {
+      "name": "Project name (must be unique).",
+      "rootPath": "Absolute path to the project directory to scan.",
+      "description": "Free-form description shown in the web UI.",
+      "disable": "Comma-separated rule ids to disable for this project (e.g. R013,R019)."
+    },
+    "prompts": {
+      "name": "Project name",
+      "nameRequired": "Project name is required.",
+      "rootPath": "Project root path (absolute)",
+      "rootPathRequired": "Project root path is required."
+    }
+  },
+  "list": {
+    "summary": "List every project in MongoDB.",
+    "empty": "No projects yet. Create one with `audithex project create`.",
+    "header": "Found {{count}} project(s):",
+    "flags": {
+      "json": "Emit JSON instead of the table."
+    }
+  },
+  "show": {
+    "summary": "Print one project's full document as JSON."
+  },
+  "delete": {
+    "summary": "Delete a project. The scans attached to it stay in the database.",
+    "ok": "Project {{name}} deleted.",
+    "confirm": "Delete project {{name}}? Existing scans are kept.",
+    "cancelled": "Cancelled — no project was deleted.",
+    "flags": {
+      "force": "Skip the confirmation prompt."
+    }
+  }
+}

@@ -19,6 +19,9 @@
   },
   "noFindings": "Проблем не знайдено — проєкт виглядає чисто.",
   "completed": "Сканування завершено.",
-  "persisted": "Скан {{id}} для {{rootPath}} збережено у MongoDB.",
-  "persistFailed": "Не вдалося зберегти скан у MongoDB: {{error}}"
+  "persisted": "Скан {{id}} для {{rootPath}} збережено у MongoDB (проєкт: {{project}}).",
+  "persistFailed": "Не вдалося зберегти скан у MongoDB: {{error}}",
+  "noProject": "—",
+  "projectRequiresMongo": "--project / AUDITHEX_PROJECT потребує MONGODB_URI.",
+  "projectNotFound": "Проєкт '{{name}}' не знайдено у MongoDB. {{error}}"
 }

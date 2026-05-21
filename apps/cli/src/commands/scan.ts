@@ -1,7 +1,12 @@
 import { join, resolve } from 'node:path';
 import { discover } from '@audithex/core-discovery';
 import { t } from '@audithex/core-i18n';
-import { connectMongo, saveScanRun } from '@audithex/core-persistence';
+import {
+  type ProjectDocument,
+  connectMongo,
+  getProjectByName,
+  saveScanRun,
+} from '@audithex/core-persistence';
 import { type ReportFormat, renderReport } from '@audithex/core-report';
 import { loadRulesPack, runRules } from '@audithex/core-rules';
 import { type ScanResult, exitCodeFromFindings } from '@audithex/core-types';
@@ -22,6 +27,7 @@ export function registerScanCommand(program: Command, env: AudithexEnv): void {
     .option('-d, --dynamic', t('cli:commands.scan.options.dynamic'), false)
     .option('--ci', t('cli:commands.scan.options.ci'), false)
     .option('--no-update-check', t('cli:commands.scan.options.noUpdateCheck'))
+    .option('-p, --project <name>', t('cli:commands.scan.options.project'))
     .action(async (path: string, options: ScanOptions) => {
       const format = (options.report ?? 'console') as ReportFormat;
       if (!VALID_REPORTS.has(format)) {
@@ -30,12 +36,47 @@ export function registerScanCommand(program: Command, env: AudithexEnv): void {
         return;
       }
 
+      const projectName = options.project ?? env.AUDITHEX_PROJECT;
+
+      let project: ProjectDocument | null = null;
+      let projectError: string | null = null;
+      if (projectName) {
+        if (!env.MONGODB_URI) {
+          process.stderr.write(`${t('scan:projectRequiresMongo')}\n`);
+          process.exitCode = 2;
+          return;
+        }
+        try {
+          const conn = await connectMongo(env.MONGODB_URI, { silent: true });
+          project = await getProjectByName(conn, projectName);
+        } catch (err) {
+          projectError = err instanceof Error ? err.message : String(err);
+        }
+        if (!project) {
+          process.stderr.write(
+            `${t('scan:projectNotFound', { name: projectName, error: projectError ?? '' })}\n`,
+          );
+          process.exitCode = 2;
+          return;
+        }
+      }
+
+      const rawRoot = project?.rootPath ?? path;
+      const absolute = resolve(process.cwd(), rawRoot);
+
       const startedAt = Date.now();
-      const absolute = resolve(process.cwd(), path);
       const discovery = discover({ rootPath: absolute });
       const userRulesPackDir = join(audithexHome(), 'rules-pack', 'current');
       const pack = loadRulesPack({ userRulesPackDir });
-      const findings = runRules(discovery, { rulesPack: pack });
+      const findings = runRules(discovery, {
+        rulesPack: pack,
+        ...(project
+          ? {
+              severityOverrides: project.severityOverrides,
+              disabledRuleIds: project.disabledRuleIds,
+            }
+          : {}),
+      });
       const result: ScanResult = {
         rootPath: discovery.rootPath,
         scannedAt: discovery.scannedAt,
@@ -54,11 +95,15 @@ export function registerScanCommand(program: Command, env: AudithexEnv): void {
       if (env.MONGODB_URI) {
         try {
           const conn = await connectMongo(env.MONGODB_URI, { silent: true });
-          const saved = await saveScanRun(conn, { scan: result });
+          const saved = await saveScanRun(conn, {
+            scan: result,
+            ...(project ? { projectId: String(project._id) } : {}),
+          });
           process.stdout.write(
             `${t('scan:persisted', {
               id: String(saved._id),
               rootPath: result.rootPath,
+              project: project ? project.name : t('scan:noProject'),
             })}\n`,
           );
         } catch (err) {
@@ -77,4 +122,5 @@ interface ScanOptions {
   dynamic?: boolean;
   ci?: boolean;
   updateCheck?: boolean;
+  project?: string;
 }
