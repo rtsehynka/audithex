@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactElement } from 'react';
 import type { SettingsSnapshot } from '../lib/settings';
 import AppShell from './app-shell';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 
 interface Props {
@@ -12,7 +13,7 @@ interface Props {
 export default function SettingsPage({ data, sessionEmail }: Props): ReactElement {
   return (
     <AppShell sessionEmail={sessionEmail} active="settings">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title="Settings"
           subtitle={
@@ -89,7 +90,7 @@ export default function SettingsPage({ data, sessionEmail }: Props): ReactElemen
             </ul>
           )}
         </Card>
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

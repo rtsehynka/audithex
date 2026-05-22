@@ -2,6 +2,7 @@ import { getAiSettings } from '@audithex/core-persistence';
 import type { ReactElement } from 'react';
 import AiSettingsForm from '../../../components/ai-settings-form';
 import AppShell from '../../../components/app-shell';
+import PageContainer from '../../../components/page-container';
 import PageHeader from '../../../components/page-header';
 import { requireSession } from '../../../lib/auth';
 import { getConnection } from '../../../lib/db';
@@ -28,7 +29,7 @@ export default async function AiSettingsRoute(): Promise<ReactElement> {
   };
   return (
     <AppShell sessionEmail={session.email} active="settings">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title="AI provider"
           back={{ href: '/settings', label: 'Settings' }}
@@ -49,7 +50,7 @@ export default async function AiSettingsRoute(): Promise<ReactElement> {
         >
           <AiSettingsForm initial={initial} action={saveAiSettingsAction} />
         </section>
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

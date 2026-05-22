@@ -2,6 +2,7 @@ import type { ReactElement } from 'react';
 import { changeEmailAction, changePasswordAction } from '../app/settings/account/actions';
 import AccountForm from './account-form';
 import AppShell from './app-shell';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 
 interface Props {
@@ -11,7 +12,7 @@ interface Props {
 export default function AccountSettingsPage({ sessionEmail }: Props): ReactElement {
   return (
     <AppShell sessionEmail={sessionEmail} active="settings">
-      <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title="Account"
           back={{ href: '/settings', label: 'Settings' }}
@@ -76,7 +77,7 @@ export default function AccountSettingsPage({ sessionEmail }: Props): ReactEleme
           successLabel="Password updated."
           action={changePasswordAction}
         />
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

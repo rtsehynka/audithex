@@ -323,6 +323,8 @@ node apps/cli/bin/audithex.js ui --port 8080            # change the port
 
 The UI redirects unauthenticated visitors to `/login`; signing in lands them on `/`. `Sign out` clears the cookie and returns to `/login`.
 
+Every dashboard page renders inside an `<AppShell>` with a persistent left sidebar (**Scans / Projects / Rules / Coverage / Settings**) and a session footer (email + sign-out). On small viewports the sidebar collapses into a top bar with horizontally-scrolling pills.
+
 The dashboard surfaces these routes:
 
 - **`/`** — Mongo-backed scan history table. Columns are id (clickable, ObjectId), `scannedAt` (UTC), top severity badge, severity counts (`C/H/M/L`), rules-pack version, elapsed time, and project root. Pagination via `?skip=…&limit=…` (default 25, max 100). Empty state explains how to seed scans by running `audithex scan` with `MONGODB_URI` set.
@@ -330,11 +332,12 @@ The dashboard surfaces these routes:
 - **`/scans/[id]/compare/[otherId]`** — diff between two scans, keyed by `ruleId + file + line`. The older `scannedAt` is automatically treated as the baseline. Shows totals (added / removed / unchanged) and grouped rows with severity badges.
 - **`/scans/[id]/pdf`** — real PDF stream (server-rendered via `@react-pdf/renderer`): A4 page, metadata grid, findings grouped by severity, `AI FIX CACHED` markers next to findings that have a stored explanation. ASCII-sanitised before render so future Unicode field values do not crash the type-shaper.
 - **`/projects`** — list of every project record in Mongo with name, root path, count of disabled rule ids, count of severity overrides, and last-updated timestamp. The header carries a **+ New project** action that lands on `/projects/new`.
-- **`/projects/new`** — create form: name (unique), absolute root path, optional description, comma-separated disabled rule ids (`R013, R019`), and one-per-line severity overrides (`R009=low`). Submitting redirects to the new project's detail page.
-- **`/projects/[id]`** — edit form pre-filled from the record, a "Run scan" card that streams per-rule progress over Server-Sent Events and links to the persisted scan when finished, plus a per-project scan history strip showing the latest 25 runs attached to it. Deleting from the header asks no extra confirmation (button is destructive — guard against fat-fingers via the back link); deletes redirect to `/projects`.
+- **`/projects/new`** — tabbed create form (**Basics / Scan scope / Rules / Database**). Basics carries the unique name, absolute root path, and optional description. Scan scope toggles the ten OWASP LLM Top 10 groups (all on by default) plus comma-separated `languages` and `extraExtensions`. Rules lists every rule in the active pack with an Enabled checkbox and per-project severity override. Database is optional — driver dropdown plus connection fields. Submitting redirects to the new project's detail page.
+- **`/projects/[id]`** — same tabbed edit form pre-filled from the record, a "Run scan" card that streams per-rule progress over Server-Sent Events and links to the persisted scan when finished, plus a per-project scan history strip showing the latest 25 runs attached to it. When any AI-required group is enabled but no AI provider is configured, the form surfaces a yellow banner pointing at `/settings/ai`. Deleting from the header asks no extra confirmation (button is destructive — guard against fat-fingers via the back link); deletes redirect to `/projects`.
 - **`/api/scans/run?projectId=<id>`** — SSE endpoint backing the "Run scan" card. Emits `start` → `discovery (begin|end)` → `rules (loaded)` → per-rule `rule` events → `persist (begin)` → `done` with the new scan id. Session cookie required (no anonymous scans).
 - **`/rules`** — read-only browser of every rule in the active rules pack: id (clickable), human-readable title (from `findings:<id>.title`), default severity badge, OWASP categories, CWE, engine kind. Header shows the active pack version and source ("bundled" or the installed git channel).
 - **`/rules/[id]`** — detail page for one rule: id + title + severity, metadata grid (OWASP / CWE / engine / languages), the i18n message template, the i18n fix recommendation, the engine parameter object, and the rule's free-form `meta` block (references, authors). Rule rows in the project form's rule picker open this page in a new tab so the editing form keeps its unsaved state.
+- **`/coverage`** — read-only OWASP LLM Top 10 (2025) matrix. Ten rows (LLM01–LLM10) each carry a status badge — `covered` (≥1 static rule fires), `planned` (static rule mapped but not yet shipped), `dynamic only` (waiting on the live-LLM attack engine), or `out of scope` (training-data concerns the static scanner cannot address, e.g. LLM04) — plus the list of mapped rule ids as clickable pills.
 - **`/settings`** — read-only info page: Audithex CLI version, session TTL, cookie name, MongoDB connection status + masked URI + database name + `scan_runs` count, the latest five rules-pack update outcomes. Surfaces a clear hint that on-disk overrides live in `.audithex/config.json` and the CLI owns the truth. A "→ Change email or password" link jumps to `/settings/account`.
 - **`/settings/account`** — change-email and change-password forms. Both require the current password (`verifyPassword` against the stored bcrypt hash) before any update lands; the change-email path re-issues the session cookie so the user stays signed in under the new address. Password rotation does NOT re-issue the cookie — any active session keeps working until the cookie expires.
 
@@ -342,15 +345,15 @@ The dashboard surfaces these routes:
 
 A project record can carry an optional database connection. When set, the scan pipeline (CLI `audithex scan --project <name>` and the web "Run scan" card) connects to the configured database after the filesystem scan and walks the listed tables with the same secret-pattern rules used against source files. Findings get a synthetic `db://<database>/<schema>.<table>?row=<n>&column=<col>` location so the existing report / persistence / PDF / diff pipelines treat them like any other finding.
 
-The first-supported driver is **Postgres** (more dialects to come). The connection card on `/projects/new` and `/projects/[id]` accepts:
+Three drivers ship today: **Postgres** (tables via `information_schema`, `pg` 8.x), **MySQL** (tables via `information_schema`, `mysql2` 3.x lazy-loaded), and **MongoDB** (collections walked recursively, `mongodb` 6.x). The Database tab on `/projects/new` and `/projects/[id]` accepts:
 
 | Field | Required | Notes |
 |---|---|---|
-| Driver | — | Leave blank to skip the DB scan entirely. `postgres` is currently the only valid value. |
-| Connection URI | when a driver is set | Standard `postgres://user:pass@host:port/dbname` URI. Override with `Database name` if the URI's path is blank. |
+| Driver | — | Leave blank to skip the DB scan entirely. Valid values: `postgres`, `mysql`, `mongodb`. |
+| Connection URI | when a driver is set | Standard `postgres://`, `mysql://`, or `mongodb://` URI. Override with `Database name` if the URI's path is blank. |
 | Database name | — | Optional override; falls back to the path component of the URI for the synthetic `db://...` finding location. |
-| Tables | — | Comma- or space-separated `schema.table` list. Scanned in order. |
-| Scan all tables | — | **Opt-in only.** When the table list is empty and this is unchecked, the scanner refuses to run rather than silently walking every table — which can be hours of overhead on real schemas. |
+| Tables / Collections | — | Comma- or space-separated list. `schema.table` for Postgres/MySQL; collection names for Mongo. Scanned in order. |
+| Scan all tables / collections | — | **Opt-in only.** When the list is empty and this is unchecked, the scanner refuses to run rather than silently walking every table — which can be hours of overhead on real schemas. |
 
 The scanner samples up to 500 rows per table (text / varchar / json / jsonb columns) and runs every secret-pattern bundle the rules pack ships. CLI output shows a `Database scan: N table(s), M row(s), K finding(s)` line; the web UI streams per-table progress events over SSE alongside the rule events.
 

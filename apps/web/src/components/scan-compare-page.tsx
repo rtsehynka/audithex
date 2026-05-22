@@ -4,6 +4,7 @@ import type { ScanDiff } from '../lib/diff';
 import { formatTimestamp } from '../lib/format';
 import type { ScanRunDetail, SerializableFinding } from '../lib/queries';
 import AppShell from './app-shell';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 import SeverityBadge from './severity-badge';
 
@@ -22,7 +23,7 @@ export default function ScanComparePage({
 }: Props): ReactElement {
   return (
     <AppShell sessionEmail={sessionEmail} active="scans">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title="Compare two scans"
           titleTestid="compare-title"
@@ -77,7 +78,7 @@ export default function ScanComparePage({
           emptyMessage="No overlap — the two scans share no findings."
           marker="="
         />
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

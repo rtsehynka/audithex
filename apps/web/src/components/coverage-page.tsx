@@ -3,6 +3,7 @@ import Link from 'next/link';
 import type { ReactElement } from 'react';
 import type { CoverageRow } from '../lib/coverage';
 import AppShell from './app-shell';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 
 interface Props {
@@ -21,7 +22,7 @@ export default function CoveragePage({
   const covered = rows.filter((r) => r.rules.length > 0).length;
   return (
     <AppShell sessionEmail={sessionEmail} active="rules">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title="OWASP LLM Top 10 (2025) coverage"
           subtitle={
@@ -100,7 +101,7 @@ export default function CoveragePage({
         </section>
 
         <Legend />
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

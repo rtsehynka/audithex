@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactElement } from 'react';
 import type { RuleOption } from '../lib/rules';
 import AppShell from './app-shell';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 import SeverityBadge from './severity-badge';
 import { Td, Th } from './table-cells';
@@ -21,7 +22,7 @@ export default function RulesPage({
 }: Props): ReactElement {
   return (
     <AppShell sessionEmail={sessionEmail} active="rules">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title="Rules"
           subtitle={
@@ -79,7 +80,7 @@ export default function RulesPage({
             </tbody>
           </table>
         </section>
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

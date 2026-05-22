@@ -1,6 +1,7 @@
 import { getAiSettings } from '@audithex/core-persistence';
 import type { ReactElement } from 'react';
 import AppShell from '../../../components/app-shell';
+import PageContainer from '../../../components/page-container';
 import PageHeader from '../../../components/page-header';
 import ProjectForm from '../../../components/project-form';
 import { requireSession } from '../../../lib/auth';
@@ -18,7 +19,7 @@ export default async function NewProjectPage(): Promise<ReactElement> {
   const aiConfigured = Boolean(ai?.apiKey && ai.apiKey.length > 0);
   return (
     <AppShell sessionEmail={session.email} active="projects">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title="New project"
           back={{ href: '/projects', label: 'All projects' }}
@@ -39,7 +40,7 @@ export default async function NewProjectPage(): Promise<ReactElement> {
             aiConfigured={aiConfigured}
           />
         </section>
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

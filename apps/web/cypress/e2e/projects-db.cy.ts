@@ -13,7 +13,9 @@ describe('audithex web — project DB connection card', () => {
     cy.visit('/projects/new');
     cy.get('[data-testid=project-name]').type('rag-project');
     cy.get('[data-testid=project-root-path]').type('/tmp/rag-project');
-    cy.get('[data-testid=project-db]').should('exist');
+    // Database section lives under its own tab now.
+    cy.get('[data-testid=tab-database]').click();
+    cy.get('[data-testid=project-db]').should('be.visible');
     cy.get('[data-testid=project-db-driver]').select('postgres');
     cy.get('[data-testid=project-db-uri]').type('postgres://user:pass@localhost:5432/rag');
     cy.get('[data-testid=project-db-database]').type('rag');
@@ -23,6 +25,7 @@ describe('audithex web — project DB connection card', () => {
 
     // Reload the detail page and confirm the form is pre-populated.
     cy.reload();
+    cy.get('[data-testid=tab-database]').click();
     cy.get('[data-testid=project-db-driver]').should('have.value', 'postgres');
     cy.get('[data-testid=project-db-uri]').should(
       'have.value',
@@ -40,6 +43,7 @@ describe('audithex web — project DB connection card', () => {
     cy.get('[data-testid=project-submit]').click();
     cy.get('[data-testid=project-form-saved]').should('exist');
     cy.reload();
+    cy.get('[data-testid=tab-database]').click();
     cy.get('[data-testid=project-db-scan-all]').should('be.checked');
 
     // Cleanup so the orchestrator-shared DB stays tidy.
@@ -52,9 +56,19 @@ describe('audithex web — project DB connection card', () => {
     cy.visit('/projects/new');
     cy.get('[data-testid=project-name]').type('rag-no-uri');
     cy.get('[data-testid=project-root-path]').type('/tmp/rag-no-uri');
+    cy.get('[data-testid=tab-database]').click();
     cy.get('[data-testid=project-db-driver]').select('postgres');
     cy.get('[data-testid=project-submit]').click();
     cy.location('pathname').should('eq', '/projects/new');
     cy.contains('Connection URI is required').should('exist');
+  });
+
+  it('lists mysql in the driver dropdown', () => {
+    cy.signIn();
+    cy.visit('/projects/new');
+    cy.get('[data-testid=tab-database]').click();
+    cy.get('[data-testid=project-db-driver] option')
+      .then(($opts) => Array.from($opts).map((o) => (o as HTMLOptionElement).value))
+      .should('include.members', ['postgres', 'mysql', 'mongodb']);
   });
 });

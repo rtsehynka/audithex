@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import type { RuleDetail } from '../lib/rules';
 import AppShell from './app-shell';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 import SeverityBadge from './severity-badge';
 
@@ -12,7 +13,7 @@ interface Props {
 export default function RuleDetailPage({ rule, sessionEmail }: Props): ReactElement {
   return (
     <AppShell sessionEmail={sessionEmail} active="rules">
-      <div className="mx-auto flex w-full max-w-4xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title={rule.id}
           titleTestid="rule-id"
@@ -94,7 +95,7 @@ export default function RuleDetailPage({ rule, sessionEmail }: Props): ReactElem
             </pre>
           </section>
         ) : null}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

@@ -117,7 +117,7 @@ export default function ScanDetailPage({
             );
           })
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }
