@@ -12,8 +12,8 @@
       {
         "id": "react-dangerous-html",
         "languages": ["typescript", "javascript"],
-        "regex": "dangerouslySetInnerHTML\\s*=\\s*\\{\\s*\\{",
-        "messageParamKind": "dangerouslySetInnerHTML"
+        "regex": "dangerouslySetInnerHTML\\s*=\\s*\\{\\s*\\{\\s*__html:\\s*\\b(?!(?:sanitizeHtml|sanitize|DOMPurify|JSON\\.stringify|jsonLd|css|[A-Z][A-Z0-9_]*[A-Z0-9])\\b)",
+        "messageParamKind": "dangerouslySetInnerHTML receiving a non-sanitizer expression"
       },
       {
         "id": "js-inner-html-assign",

@@ -12,8 +12,8 @@
       {
         "id": "node-fetch-template",
         "languages": ["typescript", "javascript"],
-        "regex": "\\b(?:fetch|axios(?:\\.[a-z]+)?|got|undici\\.request)\\s*\\(\\s*`[^`]*\\$\\{",
-        "messageParamKind": "fetch/axios with interpolated URL"
+        "regex": "\\b(?:fetch|axios(?:\\.[a-z]+)?|got|undici\\.request)\\s*\\(\\s*`(?![/])(?:[^`$]|\\$(?!\\{))*\\$\\{\\s*(?!(?:[A-Za-z_$][\\w$]*\\.)*(?:baseUrl|baseURL|endpoint|endpointUrl|host|hostname|apiUrl|apiBase|server|serverUrl)\\b)",
+        "messageParamKind": "fetch/axios with interpolated URL that is neither relative nor an admin-config base"
       },
       {
         "id": "py-requests-format",

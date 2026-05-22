@@ -2,7 +2,6 @@ import type { ReactElement } from 'react';
 import ScanHistoryPage from '../components/scan-history-page';
 import { requireSession } from '../lib/auth';
 import { listScans } from '../lib/queries';
-import { logoutAction } from './logout/actions';
 
 interface SearchParams {
   skip?: string;
@@ -21,7 +20,7 @@ export default async function HomePage({
   const limit = clamp(parseIntOr(params.limit), 5, 100, 25);
   const skip = clamp(parseIntOr(params.skip), 0, Number.POSITIVE_INFINITY, 0);
   const data = await listScans({ limit, skip });
-  return <ScanHistoryPage data={data} sessionEmail={session.email} signOut={logoutAction} />;
+  return <ScanHistoryPage data={data} sessionEmail={session.email} />;
 }
 
 function parseIntOr(raw: string | undefined): number {

@@ -2,62 +2,32 @@ import Link from 'next/link';
 import type { ReactElement } from 'react';
 import { compactPath, formatMs, formatTimestamp, shortId } from '../lib/format';
 import type { ListScansResult } from '../lib/queries';
+import AppShell from './app-shell';
+import PageHeader from './page-header';
 import SeverityBadge from './severity-badge';
 import { Td, Th } from './table-cells';
 
 interface Props {
   data: ListScansResult;
   sessionEmail: string;
-  signOut: () => void | Promise<void>;
 }
 
-export default function ScanHistoryPage({ data, sessionEmail, signOut }: Props): ReactElement {
+export default function ScanHistoryPage({ data, sessionEmail }: Props): ReactElement {
   return (
-    <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-10">
-      <header className="flex flex-wrap items-baseline justify-between gap-4 border-b border-[#1f242d] pb-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#10b981]">Audithex</h1>
-          <p className="text-xs text-[#6b7280]">
-            Signed in as <span data-testid="session-email">{sessionEmail}</span>. {data.total} scan
-            {data.total === 1 ? '' : 's'} on record.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/projects"
-            data-testid="projects-link"
-            className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#10b981] hover:text-[#10b981]"
-          >
-            Projects
-          </Link>
-          <Link
-            href="/rules"
-            data-testid="rules-link"
-            className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#10b981] hover:text-[#10b981]"
-          >
-            Rules
-          </Link>
-          <Link
-            href="/settings"
-            data-testid="settings-link"
-            className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#10b981] hover:text-[#10b981]"
-          >
-            Settings
-          </Link>
-          <form action={signOut}>
-            <button
-              type="submit"
-              data-testid="logout-button"
-              className="rounded-md border border-[#1f242d] bg-[#11141b] px-3 py-1.5 text-xs text-[#d4d4d4] hover:border-[#f97316] hover:text-[#f97316]"
-            >
-              Sign out
-            </button>
-          </form>
-        </div>
-      </header>
-
-      {data.runs.length === 0 ? <EmptyState /> : <ScanTable data={data} />}
-    </main>
+    <AppShell sessionEmail={sessionEmail} active="scans">
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
+        <PageHeader
+          title="Scans"
+          subtitle={
+            <>
+              {data.total} run{data.total === 1 ? '' : 's'} on record. Each row links to the full
+              report.
+            </>
+          }
+        />
+        {data.runs.length === 0 ? <EmptyState /> : <ScanTable data={data} />}
+      </div>
+    </AppShell>
   );
 }
 
@@ -69,8 +39,8 @@ function EmptyState(): ReactElement {
     >
       <h2 className="text-base font-semibold text-[#d4d4d4]">No scans recorded yet</h2>
       <p className="mt-2 text-xs text-[#6b7280]">
-        Set <code className="rounded bg-[#0b0e14] px-1 py-0.5 text-[#10b981]">MONGODB_URI</code> in
-        your <code className="rounded bg-[#0b0e14] px-1 py-0.5 text-[#10b981]">.env</code> and run{' '}
+        Create a project from <strong className="text-[#10b981]">Projects → New project</strong> and
+        click <strong className="text-[#10b981]">Run scan</strong>, or run{' '}
         <code className="rounded bg-[#0b0e14] px-1 py-0.5 text-[#10b981]">
           audithex scan ./your-project
         </code>{' '}
@@ -87,7 +57,7 @@ function ScanTable({ data }: { data: ListScansResult }): ReactElement {
       className="overflow-x-auto rounded-md border border-[#1f242d] bg-[#11141b]"
     >
       <table className="min-w-full divide-y divide-[#1f242d] text-sm">
-        <thead className="text-[#6b7280]">
+        <thead className="bg-[#0e1119] text-[#6b7280]">
           <tr>
             <Th>Id</Th>
             <Th>Project</Th>

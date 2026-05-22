@@ -1,4 +1,4 @@
-import { listScanRuns } from '@audithex/core-persistence';
+import { getAiSettings, listScanRuns } from '@audithex/core-persistence';
 import { notFound } from 'next/navigation';
 import type { ReactElement } from 'react';
 import ProjectDetailPage from '../../../components/project-detail-page';
@@ -29,6 +29,8 @@ export default async function ProjectDetailRoute({
 
   const scans: ScanRunSummary[] = docs.map((doc) => toScanRunSummary(doc, project.name));
   const rules = await listAvailableRules();
+  const ai = await getAiSettings(conn);
+  const aiConfigured = Boolean(ai?.apiKey && ai.apiKey.length > 0);
 
   return (
     <ProjectDetailPage
@@ -37,6 +39,7 @@ export default async function ProjectDetailRoute({
       totalScans={total}
       sessionEmail={session.email}
       rules={rules}
+      aiConfigured={aiConfigured}
     />
   );
 }

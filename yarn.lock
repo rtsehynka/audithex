@@ -99,6 +99,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@audithex/core-payloads@workspace:packages/core-payloads"
   dependencies:
+    "@audithex/core-types": "workspace:*"
     typescript: "npm:5.7.2"
   languageName: unknown
   linkType: soft
@@ -133,6 +134,19 @@ __metadata:
     "@audithex/core-languages": "workspace:*"
     "@audithex/core-types": "workspace:*"
     typescript: "npm:5.7.2"
+  languageName: unknown
+  linkType: soft
+
+"@audithex/core-scan-dynamic@workspace:packages/core-scan-dynamic":
+  version: 0.0.0-use.local
+  resolution: "@audithex/core-scan-dynamic@workspace:packages/core-scan-dynamic"
+  dependencies:
+    "@audithex/core-i18n": "workspace:*"
+    "@audithex/core-payloads": "workspace:*"
+    "@audithex/core-rules": "workspace:*"
+    "@audithex/core-types": "workspace:*"
+    typescript: "npm:5.7.2"
+    vitest: "npm:2.1.8"
   languageName: unknown
   linkType: soft
 

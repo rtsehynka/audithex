@@ -13,6 +13,7 @@ const NAMESPACES = [
   'scan',
   'findings',
   'blocks',
+  'judges',
   'update',
   'selftest',
   'history',
@@ -109,6 +110,36 @@ export function t(key: string, params?: Record<string, string | number>): string
     throw new Error('i18n is not initialized. Call initI18n() first.');
   }
   return initialized.t(key, params as Record<string, unknown>) as string;
+}
+
+/**
+ * Reads a non-string resource (e.g. a list of refusal phrases) from a
+ * specific locale's bundle. Intended for callers that need to merge
+ * data across both locales — the dynamic-scan refusal judge, for
+ * example, matches against an EN+UK union so it stays robust against
+ * agents that reply in either language. Returns `undefined` when the
+ * key resolves to a string or is absent, so callers can safely
+ * fall back.
+ */
+export function getResourceList(ns: Namespace, key: string, locale: Locale): readonly string[] {
+  if (!initialized) {
+    throw new Error('i18n is not initialized. Call initI18n() first.');
+  }
+  const bundle = initialized.getResourceBundle(locale, ns) as Record<string, unknown> | undefined;
+  if (!bundle) return [];
+  const cursor = readPath(bundle, key);
+  if (!Array.isArray(cursor)) return [];
+  return cursor.filter((v): v is string => typeof v === 'string');
+}
+
+function readPath(obj: Record<string, unknown>, dotted: string): unknown {
+  const parts = dotted.split('.');
+  let cursor: unknown = obj;
+  for (const part of parts) {
+    if (cursor === null || typeof cursor !== 'object') return undefined;
+    cursor = (cursor as Record<string, unknown>)[part];
+  }
+  return cursor;
 }
 
 export function getCurrentLocale(): Locale {
