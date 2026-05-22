@@ -125,13 +125,13 @@ function parseProjectForm(
   const dbUri = parsed.data.dbUri?.trim() ?? '';
   let dbConnection: ProjectDbConnection | null = null;
   if (dbDriver) {
-    if (dbDriver !== 'postgres' && dbDriver !== 'mongodb') {
+    if (dbDriver !== 'postgres' && dbDriver !== 'mysql' && dbDriver !== 'mongodb') {
       return {
         ok: false,
         result: {
           ok: false,
           fieldErrors: {
-            dbDriver: 'Supported drivers: postgres, mongodb.',
+            dbDriver: 'Supported drivers: postgres, mysql, mongodb.',
           },
         },
       };

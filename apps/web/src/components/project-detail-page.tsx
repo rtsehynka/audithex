@@ -6,6 +6,7 @@ import type { ProjectView } from '../lib/projects';
 import type { ScanRunSummary } from '../lib/queries';
 import type { RuleOption } from '../lib/rules';
 import AppShell from './app-shell';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 import ProjectForm from './project-form';
 import RunScanCard from './run-scan-card';
@@ -32,7 +33,7 @@ export default function ProjectDetailPage({
   const deleteBound = deleteProjectAction.bind(null, project.id);
   return (
     <AppShell sessionEmail={sessionEmail} active="projects">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title={project.name}
           titleTestid="project-title"
@@ -134,7 +135,7 @@ export default function ProjectDetailPage({
             </ul>
           )}
         </section>
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

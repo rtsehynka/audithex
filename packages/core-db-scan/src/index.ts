@@ -1,5 +1,6 @@
 import type { Finding, RulesPack } from '@audithex/core-types';
 import { type MongoConnectionConfig, scanMongo } from './mongo.js';
+import { type MysqlClientFactory, type MysqlConnectionConfig, scanMysql } from './mysql.js';
 import { type PgClientCtor, type PgConnectionConfig, scanPostgres } from './postgres.js';
 import { indexSecretRules } from './shared.js';
 
@@ -16,11 +17,12 @@ import { indexSecretRules } from './shared.js';
  *
  * Driver list:
  *   - `postgres` — text/varchar/json/jsonb columns
+ *   - `mysql`    — char/varchar/text/json columns
  *   - `mongodb`  — string fields walked recursively through every
  *                  document in the selected collections
  */
 
-export type DbConnectionConfig = PgConnectionConfig | MongoConnectionConfig;
+export type DbConnectionConfig = PgConnectionConfig | MysqlConnectionConfig | MongoConnectionConfig;
 
 export interface DbScanOptions {
   connection: DbConnectionConfig;
@@ -43,9 +45,15 @@ export interface DbScanOptions {
   /**
    * Optional Postgres Client constructor injection point. Used by
    * tests to pass pg-mem's adapter in lieu of a real Postgres. Has
-   * no effect on the mongodb driver.
+   * no effect on the mysql / mongodb drivers.
    */
   clientFactory?: PgClientCtor;
+  /**
+   * Optional MySQL connection factory injection point. Tests provide
+   * an in-process implementation so we don't need a real MySQL daemon
+   * (mysql-mem doesn't exist; same pattern as `clientFactory` for pg).
+   */
+  mysqlClientFactory?: MysqlClientFactory;
 }
 
 export interface DbTableScanEvent {
@@ -95,6 +103,24 @@ export async function scanDatabase(options: DbScanOptions): Promise<DbScanResult
     };
   }
 
+  if (options.connection.driver === 'mysql') {
+    const outcome = await scanMysql({
+      connection: options.connection,
+      tables: options.tables,
+      scanAllTables: options.scanAllTables,
+      rowLimit,
+      rules,
+      ...(options.mysqlClientFactory ? { clientFactory: options.mysqlClientFactory } : {}),
+      ...(options.onTableScanned ? { onTableScanned: options.onTableScanned } : {}),
+    });
+    return {
+      findings: outcome.findings,
+      tablesScanned: outcome.tablesScanned,
+      rowsScanned: outcome.rowsScanned,
+      elapsedMs: Date.now() - startedAt,
+    };
+  }
+
   if (options.connection.driver === 'mongodb') {
     const outcome = await scanMongo({
       connection: options.connection,
@@ -132,5 +158,7 @@ export async function scanDatabase(options: DbScanOptions): Promise<DbScanResult
 
 export { probePostgres, listUserTables } from './postgres.js';
 export { probeMongo } from './mongo.js';
+export { probeMysql } from './mysql.js';
 export type { PgClientCtor, PgConnectionConfig } from './postgres.js';
 export type { MongoConnectionConfig } from './mongo.js';
+export type { MysqlConnectionConfig, MysqlClientFactory, MysqlClientLike } from './mysql.js';

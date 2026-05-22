@@ -363,7 +363,8 @@ function DatabaseSection({
         <p className="mt-1 text-[10px] text-[#6b7280]">
           Connects to the project's RAG / operational database and runs the same secret-pattern
           rules against text-typed columns or document fields. Supported drivers:{' '}
-          <strong className="text-[#d4d4d4]">postgres</strong> (tables) and{' '}
+          <strong className="text-[#d4d4d4]">postgres</strong> (tables),{' '}
+          <strong className="text-[#d4d4d4]">mysql</strong> (tables) and{' '}
           <strong className="text-[#d4d4d4]">mongodb</strong> (collections). Local instances only.
           Leave the driver blank to skip the database scan. "Scan all tables / collections" is
           opt-in only — walking every table on every scan is overhead and usually not what you want.
@@ -379,6 +380,7 @@ function DatabaseSection({
         >
           <option value="">— none —</option>
           <option value="postgres">postgres</option>
+          <option value="mysql">mysql</option>
           <option value="mongodb">mongodb</option>
         </select>
         {fieldError('dbDriver') ? (

@@ -4,7 +4,7 @@ import { logoutAction } from '../app/logout/actions';
 
 interface Props {
   sessionEmail: string;
-  active: 'scans' | 'projects' | 'rules' | 'settings' | 'none';
+  active: 'scans' | 'projects' | 'rules' | 'coverage' | 'settings' | 'none';
   children: ReactNode;
 }
 
@@ -12,6 +12,7 @@ const NAV: { id: Props['active']; href: string; label: string; testid: string }[
   { id: 'scans', href: '/', label: 'Scans', testid: 'nav-scans' },
   { id: 'projects', href: '/projects', label: 'Projects', testid: 'projects-link' },
   { id: 'rules', href: '/rules', label: 'Rules', testid: 'rules-link' },
+  { id: 'coverage', href: '/coverage', label: 'Coverage', testid: 'coverage-link' },
   { id: 'settings', href: '/settings', label: 'Settings', testid: 'settings-link' },
 ];
 

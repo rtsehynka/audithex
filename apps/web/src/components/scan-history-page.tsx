@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { compactPath, formatMs, formatTimestamp, shortId } from '../lib/format';
 import type { ListScansResult } from '../lib/queries';
 import AppShell from './app-shell';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 import SeverityBadge from './severity-badge';
 import { Td, Th } from './table-cells';
@@ -15,7 +16,7 @@ interface Props {
 export default function ScanHistoryPage({ data, sessionEmail }: Props): ReactElement {
   return (
     <AppShell sessionEmail={sessionEmail} active="scans">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title="Scans"
           subtitle={
@@ -26,7 +27,7 @@ export default function ScanHistoryPage({ data, sessionEmail }: Props): ReactEle
           }
         />
         {data.runs.length === 0 ? <EmptyState /> : <ScanTable data={data} />}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

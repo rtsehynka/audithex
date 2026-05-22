@@ -5,6 +5,7 @@ import type { ScanComparisonOption, ScanRunDetail, SerializableFinding } from '.
 import AppShell from './app-shell';
 import ComparePicker from './compare-picker';
 import FindingFixCard from './finding-fix-card';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 import SeverityBadge from './severity-badge';
 
@@ -40,7 +41,7 @@ export default function ScanDetailPage({
   for (const fix of cachedFixes) fixByKey.set(fix.findingKey, fix);
   return (
     <AppShell sessionEmail={sessionEmail} active="scans">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title={`Scan ${scan.id}`}
           titleTestid="scan-title"

@@ -23,7 +23,7 @@ import { Schema } from 'mongoose';
  * The "scan all tables" toggle is deliberately opt-in: walking every
  * table by default is too much overhead for big production schemas.
  */
-export type DbDriver = 'postgres' | 'mongodb';
+export type DbDriver = 'postgres' | 'mysql' | 'mongodb';
 
 export interface ProjectDbConnection {
   driver: DbDriver;
@@ -75,7 +75,11 @@ export interface ProjectDocument {
 
 const DbConnectionSchema = new Schema<ProjectDbConnection>(
   {
-    driver: { type: String, required: true, enum: ['postgres', 'mongodb'] satisfies DbDriver[] },
+    driver: {
+      type: String,
+      required: true,
+      enum: ['postgres', 'mysql', 'mongodb'] satisfies DbDriver[],
+    },
     uri: { type: String, required: true },
     database: { type: String, default: null },
   },

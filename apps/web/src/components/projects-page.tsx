@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ReactElement } from 'react';
 import type { ProjectView } from '../lib/projects';
 import AppShell from './app-shell';
+import PageContainer from './page-container';
 import PageHeader from './page-header';
 import { Td, Th } from './table-cells';
 
@@ -13,7 +14,7 @@ interface Props {
 export default function ProjectsPage({ projects, sessionEmail }: Props): ReactElement {
   return (
     <AppShell sessionEmail={sessionEmail} active="projects">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-6 py-8">
+      <PageContainer>
         <PageHeader
           title="Projects"
           subtitle={
@@ -94,7 +95,7 @@ export default function ProjectsPage({ projects, sessionEmail }: Props): ReactEl
             </table>
           </section>
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }
